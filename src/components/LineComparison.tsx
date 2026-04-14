@@ -8,19 +8,20 @@ import { cn } from '@/lib/utils'
 
 type LineStat = {
   label: string
+  description: string
   key: keyof MPLine
   higherIsBetter: boolean
   format: 'percent' | 'integer' | 'decimal1' | 'toi'
 }
 
 const LINE_STATS: LineStat[] = [
-  { label: 'xG%',  key: 'xGoalsPercentage',  higherIsBetter: true,  format: 'percent'  },
-  { label: 'CF%',  key: 'corsiPercentage',    higherIsBetter: true,  format: 'percent'  },
-  { label: 'FF%',  key: 'fenwickPercentage',  higherIsBetter: true,  format: 'percent'  },
-  { label: 'GF',   key: 'goalsFor',           higherIsBetter: true,  format: 'decimal1' },
-  { label: 'GA',   key: 'goalsAgainst',       higherIsBetter: false, format: 'decimal1' },
-  { label: 'GP',   key: 'games_played',       higherIsBetter: true,  format: 'integer'  },
-  { label: 'TOI/GP', key: 'icetime',          higherIsBetter: true,  format: 'toi'      },
+  { label: 'xG%',    description: 'Expected Goals % — share of scoring chances by shot quality; above 50% means the line is out-chancing the opponent',  key: 'xGoalsPercentage', higherIsBetter: true,  format: 'percent'  },
+  { label: 'CF%',    description: 'Corsi For % — share of all shot attempts (on goal, missed, blocked) while the line is on ice; a proxy for puck possession', key: 'corsiPercentage',   higherIsBetter: true,  format: 'percent'  },
+  { label: 'FF%',    description: 'Fenwick For % — share of unblocked shot attempts; similar to Corsi but excludes blocked shots',                         key: 'fenwickPercentage', higherIsBetter: true,  format: 'percent'  },
+  { label: 'GF',     description: 'Goals For — goals scored while this line was on ice',                                                                    key: 'goalsFor',          higherIsBetter: true,  format: 'decimal1' },
+  { label: 'GA',     description: 'Goals Against — goals allowed while this line was on ice',                                                               key: 'goalsAgainst',      higherIsBetter: false, format: 'decimal1' },
+  { label: 'GP',     description: 'Games Played together as a line',                                                                                        key: 'games_played',      higherIsBetter: true,  format: 'integer'  },
+  { label: 'TOI/GP', description: 'Time on Ice per Game — average ice time per game in minutes:seconds; higher means the coach trusts the line in key situations', key: 'icetime', higherIsBetter: true,  format: 'toi'      },
 ]
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -216,9 +217,12 @@ function StatRow({ stat, l1, l2 }: { stat: LineStat; l1: MPLine; l2: MPLine }) {
       </div>
 
       <div className="text-center px-1">
-        <span className="text-xs font-medium text-[var(--text-muted)] whitespace-nowrap">
+        <abbr
+          title={stat.description}
+          className="text-xs font-medium text-[var(--text-muted)] whitespace-nowrap no-underline cursor-help border-b border-dotted border-[var(--text-muted)]/40"
+        >
           {stat.label}
-        </span>
+        </abbr>
       </div>
 
       <div className="flex flex-col items-start gap-1.5">
