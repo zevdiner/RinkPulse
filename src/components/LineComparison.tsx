@@ -3,6 +3,7 @@
 import { useState, useCallback, useRef } from 'react'
 import type { MPLine } from '@/types'
 import { cn } from '@/lib/utils'
+import StatGlossary from './StatGlossary'
 
 // ─── Stat definitions ─────────────────────────────────────────────────────────
 
@@ -276,6 +277,9 @@ export default function LineComparison() {
               <StatRow key={stat.key as string} stat={stat} l1={line1} l2={line2} />
             ))}
           </div>
+
+          {/* Glossary */}
+          <StatGlossary entries={LINE_STATS.map(s => ({ label: s.label, description: s.description }))} />
         </div>
       )}
 

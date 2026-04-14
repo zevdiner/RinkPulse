@@ -8,6 +8,7 @@ import PlayerSearch from './PlayerSearch'
 import StatBar from './StatBar'
 import Sparkline from './Sparkline'
 import StatCardDownload from './StatCardDownload'
+import StatGlossary from './StatGlossary'
 import { SKATER_STATS, GOALIE_STATS } from '@/lib/utils'
 import type { NHLGameLogEntry, PlayerStats, SparkMetric, Timeframe } from '@/types'
 
@@ -260,6 +261,9 @@ export default function ComparisonTool() {
               Copy Link
             </button>
           </div>
+
+          {/* Glossary */}
+          <StatGlossary entries={statDefs.map(s => ({ label: s.label, description: s.description }))} />
         </div>
       )}
 
