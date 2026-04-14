@@ -11,7 +11,7 @@ import { SKATER_STATS, GOALIE_STATS } from '@/lib/utils'
 import type { PlayerStats, Timeframe } from '@/types'
 
 const TIMEFRAMES: { value: Timeframe; label: string }[] = [
-  { value: 'season', label: '2024–25' },
+  { value: 'season', label: '2025–26' },
   { value: 'career', label: 'Career' },
   { value: 'last3', label: 'Last 3 Seasons' },
   { value: 'playoffs', label: 'Playoffs' },

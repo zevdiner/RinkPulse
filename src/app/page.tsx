@@ -14,7 +14,7 @@ export default function HomePage() {
           <Suspense fallback="Today">
             <TodayDate />
           </Suspense>
-          {' · Historically notable performances from the 2024–25 NHL season'}
+          {' · Historically notable performances from the 2025–26 NHL season'}
         </p>
       </div>
 

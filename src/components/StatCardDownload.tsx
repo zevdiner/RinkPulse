@@ -13,7 +13,7 @@ interface Props {
 }
 
 const TIMEFRAME_LABELS: Record<Timeframe, string> = {
-  season: '2024–25 Season',
+  season: '2025–26 Season',
   career: 'Career',
   last3: 'Last 3 Seasons',
   playoffs: 'Playoffs',
