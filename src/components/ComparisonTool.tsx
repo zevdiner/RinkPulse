@@ -6,15 +6,22 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import { Link2, AlertCircle } from 'lucide-react'
 import PlayerSearch from './PlayerSearch'
 import StatBar from './StatBar'
+import Sparkline from './Sparkline'
 import StatCardDownload from './StatCardDownload'
 import { SKATER_STATS, GOALIE_STATS } from '@/lib/utils'
-import type { PlayerStats, Timeframe } from '@/types'
+import type { NHLGameLogEntry, PlayerStats, SparkMetric, Timeframe } from '@/types'
 
 const TIMEFRAMES: { value: Timeframe; label: string }[] = [
   { value: 'season', label: '2025–26' },
   { value: 'career', label: 'Career' },
   { value: 'last3', label: 'Last 3 Seasons' },
   { value: 'playoffs', label: 'Playoffs' },
+]
+
+const SPARK_METRICS: { value: SparkMetric; label: string }[] = [
+  { value: 'points', label: 'PTS' },
+  { value: 'plusMinus', label: '+/−' },
+  { value: 'toi', label: 'TOI' },
 ]
 
 export default function ComparisonTool() {
@@ -28,6 +35,9 @@ export default function ComparisonTool() {
   const [timeframe, setTimeframe] = useState<Timeframe>((params.get('tf') as Timeframe) || 'season')
   const [p1Stats, setP1Stats] = useState<PlayerStats | null>(null)
   const [p2Stats, setP2Stats] = useState<PlayerStats | null>(null)
+  const [p1Games, setP1Games] = useState<NHLGameLogEntry[]>([])
+  const [p2Games, setP2Games] = useState<NHLGameLogEntry[]>([])
+  const [sparkMetric, setSparkMetric] = useState<SparkMetric>('points')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -46,7 +56,21 @@ export default function ComparisonTool() {
       setP2Stats(s2)
       if (!p1Name) setP1Name(s1.name)
       if (!p2Name) setP2Name(s2.name)
-    } catch (e) {
+
+      // Fetch game logs in the background (skaters only — goalies have different log shape)
+      if (!s1.isGoalie && !s2.isGoalie) {
+        Promise.all([
+          fetch(`/api/players/${id1}/gamelog`).then(r => r.ok ? r.json() : []),
+          fetch(`/api/players/${id2}/gamelog`).then(r => r.ok ? r.json() : []),
+        ]).then(([g1, g2]) => {
+          setP1Games(g1)
+          setP2Games(g2)
+        }).catch(() => {})
+      } else {
+        setP1Games([])
+        setP2Games([])
+      }
+    } catch {
       setError('Could not load player stats. Please try again.')
     } finally {
       setLoading(false)
@@ -75,6 +99,7 @@ export default function ComparisonTool() {
     setP1Id(id)
     setP1Name(name)
     setP1Stats(null)
+    setP1Games([])
     if (id && p2Id) fetchStats(id, p2Id, timeframe)
   }
 
@@ -82,6 +107,7 @@ export default function ComparisonTool() {
     setP2Id(id)
     setP2Name(name)
     setP2Stats(null)
+    setP2Games([])
     if (p1Id && id) fetchStats(p1Id, id, timeframe)
   }
 
@@ -95,6 +121,26 @@ export default function ComparisonTool() {
   }
 
   const statDefs = (p1Stats?.isGoalie || p2Stats?.isGoalie) ? GOALIE_STATS : SKATER_STATS
+
+  // Win tally
+  const p1Wins = p1Stats && p2Stats
+    ? statDefs.filter(s => {
+        const v1 = p1Stats[s.key] as number | undefined
+        const v2 = p2Stats[s.key] as number | undefined
+        if (v1 === undefined || v2 === undefined) return false
+        return s.higherIsBetter ? v1 > v2 : v1 < v2
+      }).length
+    : 0
+  const p2Wins = p1Stats && p2Stats
+    ? statDefs.filter(s => {
+        const v1 = p1Stats[s.key] as number | undefined
+        const v2 = p2Stats[s.key] as number | undefined
+        if (v1 === undefined || v2 === undefined) return false
+        return s.higherIsBetter ? v2 > v1 : v2 < v1
+      }).length
+    : 0
+
+  const hasGameLogs = p1Games.length > 0 || p2Games.length > 0
 
   return (
     <div className="flex flex-col gap-6">
@@ -147,8 +193,54 @@ export default function ComparisonTool() {
 
       {p1Stats && p2Stats && !loading && (
         <div className="card overflow-hidden">
-          {/* Player header */}
-          <CompareHeader p1={p1Stats} p2={p2Stats} />
+          {/* Player header + win tally */}
+          <CompareHeader p1={p1Stats} p2={p2Stats} p1Wins={p1Wins} p2Wins={p2Wins} />
+
+          {/* Sparklines */}
+          {hasGameLogs && (
+            <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-3 px-5 py-3 border-b border-[var(--border)]">
+              <div className="min-w-0">
+                <Sparkline games={p1Games} metric={sparkMetric} color="blue" />
+              </div>
+
+              {/* Metric toggle */}
+              <div className="flex flex-col gap-1 items-center">
+                {SPARK_METRICS.map(m => (
+                  <button
+                    key={m.value}
+                    onClick={() => setSparkMetric(m.value)}
+                    className={`px-2 py-0.5 rounded text-[10px] font-semibold transition-colors ${
+                      sparkMetric === m.value
+                        ? 'bg-[var(--accent-blue-dim)] text-[var(--accent-blue)]'
+                        : 'text-[var(--text-muted)] hover:text-[var(--text-secondary)]'
+                    }`}
+                  >
+                    {m.label}
+                  </button>
+                ))}
+                <span className="text-[9px] text-[var(--text-muted)] mt-0.5 whitespace-nowrap">last 10 G</span>
+              </div>
+
+              <div className="min-w-0">
+                <Sparkline games={p2Games} metric={sparkMetric} color="red" />
+              </div>
+            </div>
+          )}
+
+          {/* Legend strip */}
+          <div className="grid grid-cols-[1fr_auto_1fr] items-center px-5 py-2 border-b border-[var(--border)]">
+            <span className="flex items-center gap-1.5 text-[11px] text-[var(--text-muted)]">
+              <span className="inline-block w-2 h-2 rounded-sm flex-shrink-0" style={{ background: '#4a90f7' }} />
+              <span className="truncate">{p1Stats.name}</span>
+            </span>
+            <span className="text-[10px] text-[var(--text-muted)] text-center px-2 whitespace-nowrap">
+              bold = leads
+            </span>
+            <span className="flex items-center justify-end gap-1.5 text-[11px] text-[var(--text-muted)]">
+              <span className="truncate text-right">{p2Stats.name}</span>
+              <span className="inline-block w-2 h-2 rounded-sm flex-shrink-0" style={{ background: '#ef4444' }} />
+            </span>
+          </div>
 
           {/* Stats */}
           <div className="px-5 pb-2">
@@ -176,7 +268,15 @@ export default function ComparisonTool() {
   )
 }
 
-function CompareHeader({ p1, p2 }: { p1: PlayerStats; p2: PlayerStats }) {
+function CompareHeader({
+  p1, p2, p1Wins, p2Wins,
+}: {
+  p1: PlayerStats
+  p2: PlayerStats
+  p1Wins: number
+  p2Wins: number
+}) {
+  const total = p1Wins + p2Wins
   return (
     <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-4 p-5 border-b border-[var(--border)]">
       {/* P1 */}
@@ -190,9 +290,19 @@ function CompareHeader({ p1, p2 }: { p1: PlayerStats; p2: PlayerStats }) {
         </div>
       </div>
 
-      {/* VS */}
+      {/* VS + tally */}
       <div className="flex flex-col items-center gap-1">
         <span className="text-xl font-black text-[var(--text-muted)] tracking-widest">VS</span>
+        {total > 0 && (
+          <>
+            <div className="flex items-center gap-1.5 text-sm font-bold tabular-nums leading-none">
+              <span style={{ color: '#4a90f7' }}>{p1Wins}</span>
+              <span className="text-[var(--text-muted)] text-xs">–</span>
+              <span style={{ color: '#ef4444' }}>{p2Wins}</span>
+            </div>
+            <span className="text-[9px] text-[var(--text-muted)] tracking-wide uppercase">stat leads</span>
+          </>
+        )}
       </div>
 
       {/* P2 */}

@@ -283,3 +283,25 @@ export interface ComparisonStat {
   format: 'integer' | 'decimal1' | 'decimal2' | 'decimal3' | 'percent' | 'plusminus'
   higherIsBetter: boolean
 }
+
+// ─── Game Log Types ───────────────────────────────────────────────────────────
+
+export type SparkMetric = 'points' | 'plusMinus' | 'toi'
+
+export interface NHLGameLogEntry {
+  gameId: number
+  teamAbbrev: string
+  homeRoadFlag: string
+  gameDate: string
+  opponentAbbrev?: string
+  goals: number
+  assists: number
+  points: number
+  plusMinus: number
+  powerPlayGoals: number
+  shots: number
+  hits: number
+  blockedShots: number
+  pim: number
+  toi: string // "MM:SS"
+}

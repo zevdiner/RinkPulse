@@ -30,24 +30,35 @@ def fix_csv(src_name: str, dest_name: str, str_columns: list[str]) -> None:
         reader = csv.DictReader(fin)
         assert reader.fieldnames, f"No headers found in {src_name}"
         fieldnames = list(reader.fieldnames)
+        str_col_set = set(str_columns)
 
         missing = [c for c in str_columns if c not in fieldnames]
         if missing:
             print(f"  WARN  Column(s) not found in {src_name}: {missing}")
 
-        writer = csv.DictWriter(fout, fieldnames=fieldnames, quoting=csv.QUOTE_MINIMAL)
-        writer.writeheader()
+        # Write header manually
+        fout.write(",".join(fieldnames) + "\n")
 
         rows_written = 0
         for row in reader:
-            for col in str_columns:
-                if col in row and row[col] is not None:
-                    # Force the value to be written as a quoted string
-                    row[col] = str(row[col])
-            writer.writerow(row)
+            parts = []
+            for col in fieldnames:
+                val = row.get(col, "")
+                if col in str_col_set:
+                    # Always wrap in double-quotes so the importer treats it as text,
+                    # not a number — critical for values exceeding bigint (19 digits).
+                    parts.append(f'"{val}"')
+                else:
+                    # Use standard minimal quoting for everything else
+                    # (only quote if the value contains a comma, quote, or newline)
+                    if val and any(c in val for c in (',', '"', '\n')):
+                        parts.append('"' + val.replace('"', '""') + '"')
+                    else:
+                        parts.append(val)
+            fout.write(",".join(parts) + "\n")
             rows_written += 1
 
-    print(f"  OK    {src_name} → {dest_name}  ({rows_written:,} rows, columns forced to text: {str_columns})")
+    print(f"  OK    {src_name} → {dest_name}  ({rows_written:,} rows, force-quoted as text: {str_columns})")
 
 
 def main() -> None:

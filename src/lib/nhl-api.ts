@@ -1,4 +1,5 @@
 import type {
+  NHLGameLogEntry,
   NHLPlayerLanding,
   NHLPlayerSearchResult,
   NHLStatLeader,
@@ -139,13 +140,14 @@ export async function getPlayerGameLog(
   playerId: number,
   season = CURRENT_SEASON,
   gameType = 2,
-) {
+): Promise<NHLGameLogEntry[]> {
   try {
-    return await nhlfetch<{ gameLog: unknown[] }>(
+    const data = await nhlfetch<{ gameLog: NHLGameLogEntry[] }>(
       `/player/${playerId}/game-log/${season}/${gameType}`,
     )
+    return data.gameLog ?? []
   } catch {
-    return null
+    return []
   }
 }
 
