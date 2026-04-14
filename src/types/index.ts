@@ -186,8 +186,10 @@ export interface MPLine {
   season: number
   name: string
   team: string
+  position: string
   situation: string
   games_played: number
+  icetime: number
   xGoalsPercentage: number
   corsiPercentage: number
   fenwickPercentage: number

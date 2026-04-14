@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { BarChart2, Rss } from 'lucide-react'
+import { BarChart2, Rss, Users } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 export default function Navigation() {
@@ -30,7 +30,10 @@ export default function Navigation() {
             Stories
           </NavLink>
           <NavLink href="/compare" active={path.startsWith('/compare')} icon={<BarChart2 size={15} />}>
-            Compare
+            Players
+          </NavLink>
+          <NavLink href="/lines" active={path.startsWith('/lines')} icon={<Users size={15} />}>
+            Lines
           </NavLink>
         </nav>
       </div>

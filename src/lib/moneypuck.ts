@@ -22,8 +22,9 @@ const GOALIE_COLS = new Set([
 ])
 
 const LINE_COLS = new Set([
-  'lineId', 'season', 'name', 'team', 'situation',
-  'games_played', 'xGoalsPercentage', 'corsiPercentage', 'fenwickPercentage',
+  'lineId', 'season', 'name', 'team', 'position', 'situation',
+  'games_played', 'icetime',
+  'xGoalsPercentage', 'corsiPercentage', 'fenwickPercentage',
   'goalsFor', 'goalsAgainst',
 ])
 
@@ -77,8 +78,23 @@ export function getGoalies(): MPGoalie[] {
 }
 
 export function getLines(): MPLine[] {
-  if (!_lines) _lines = readCSV<MPLine>('lines.csv', LINE_COLS)
+  if (!_lines) {
+    // lines_slim.csv is the committed, Vercel-safe version (situation=all, key cols only).
+    // Fall back to the full lines.csv when running locally with the original file.
+    _lines = readCSV<MPLine>('lines_slim.csv', LINE_COLS)
+    if (_lines.length === 0) _lines = readCSV<MPLine>('lines.csv', LINE_COLS)
+  }
   return _lines
+}
+
+/** Search lines by player last name (case-insensitive substring match on the name field) */
+export function searchLines(query: string, limit = 60): MPLine[] {
+  if (!query || query.length < 2) return []
+  const lower = query.toLowerCase()
+  return getLines()
+    .filter(l => l.name.toLowerCase().includes(lower))
+    .sort((a, b) => b.season - a.season)
+    .slice(0, limit)
 }
 
 export function getTeams(): MPTeam[] {
