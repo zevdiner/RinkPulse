@@ -279,6 +279,7 @@ export interface PlayerStats {
 
 export interface ComparisonStat {
   label: string
+  description: string
   key: keyof PlayerStats
   format: 'integer' | 'decimal1' | 'decimal2' | 'decimal3' | 'percent' | 'plusminus'
   higherIsBetter: boolean

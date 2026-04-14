@@ -68,30 +68,30 @@ export function percentileColor(p: number): string {
 
 /** Skater stat definitions for comparison */
 export const SKATER_STATS: ComparisonStat[] = [
-  { label: 'Games Played', key: 'gamesPlayed', format: 'integer', higherIsBetter: true },
-  { label: 'Goals', key: 'goals', format: 'integer', higherIsBetter: true },
-  { label: 'Assists', key: 'assists', format: 'integer', higherIsBetter: true },
-  { label: 'Points', key: 'points', format: 'integer', higherIsBetter: true },
-  { label: 'Pts/GP', key: 'pointsPerGame', format: 'decimal2' as ComparisonStat['format'], higherIsBetter: true },
-  { label: '+/-', key: 'plusMinus', format: 'plusminus', higherIsBetter: true },
-  { label: 'PIM', key: 'pim', format: 'integer', higherIsBetter: false },
-  { label: 'Shots', key: 'shots', format: 'integer', higherIsBetter: true },
-  { label: 'Sh%', key: 'shootingPctg', format: 'percent', higherIsBetter: true },
-  { label: 'PP Goals', key: 'powerPlayGoals', format: 'integer', higherIsBetter: true },
-  { label: 'PP Points', key: 'powerPlayPoints', format: 'integer', higherIsBetter: true },
-  { label: 'SH Goals', key: 'shorthandedGoals', format: 'integer', higherIsBetter: true },
-  { label: 'GWG', key: 'gameWinningGoals', format: 'integer', higherIsBetter: true },
+  { label: 'GP',       description: 'Games Played',                                                               key: 'gamesPlayed',     format: 'integer',  higherIsBetter: true  },
+  { label: 'G',        description: 'Goals',                                                                      key: 'goals',           format: 'integer',  higherIsBetter: true  },
+  { label: 'A',        description: 'Assists',                                                                     key: 'assists',         format: 'integer',  higherIsBetter: true  },
+  { label: 'PTS',      description: 'Points (Goals + Assists)',                                                    key: 'points',          format: 'integer',  higherIsBetter: true  },
+  { label: 'PTS/GP',   description: 'Points per game played — rate stat that adjusts for games missed',           key: 'pointsPerGame',   format: 'decimal2' as ComparisonStat['format'], higherIsBetter: true  },
+  { label: '+/−',      description: 'Plus/Minus — +1 for each even-strength or shorthanded goal scored, −1 for each allowed, while on ice', key: 'plusMinus', format: 'plusminus', higherIsBetter: true },
+  { label: 'PIM',      description: 'Penalties in Minutes',                                                       key: 'pim',             format: 'integer',  higherIsBetter: false },
+  { label: 'SOG',      description: 'Shots on Goal',                                                              key: 'shots',           format: 'integer',  higherIsBetter: true  },
+  { label: 'SH%',      description: 'Shooting Percentage — goals scored per shot on goal',                        key: 'shootingPctg',    format: 'percent',  higherIsBetter: true  },
+  { label: 'PPG',      description: 'Power Play Goals — goals scored while the team has a man advantage',         key: 'powerPlayGoals',  format: 'integer',  higherIsBetter: true  },
+  { label: 'PPP',      description: 'Power Play Points — points (goals + assists) scored on the power play',      key: 'powerPlayPoints', format: 'integer',  higherIsBetter: true  },
+  { label: 'SHG',      description: 'Shorthanded Goals — goals scored while the team is a man down',              key: 'shorthandedGoals', format: 'integer', higherIsBetter: true  },
+  { label: 'GWG',      description: 'Game-Winning Goals — goals that provided the final winning margin',          key: 'gameWinningGoals', format: 'integer', higherIsBetter: true  },
 ]
 
 /** Goalie stat definitions for comparison */
 export const GOALIE_STATS: ComparisonStat[] = [
-  { label: 'Games Played', key: 'gamesPlayed', format: 'integer', higherIsBetter: true },
-  { label: 'Wins', key: 'wins', format: 'integer', higherIsBetter: true },
-  { label: 'Losses', key: 'losses', format: 'integer', higherIsBetter: false },
-  { label: 'OT Losses', key: 'otLosses', format: 'integer', higherIsBetter: false },
-  { label: 'SV%', key: 'savePercentage', format: 'decimal3', higherIsBetter: true },
-  { label: 'GAA', key: 'goalsAgainstAvg', format: 'decimal2' as ComparisonStat['format'], higherIsBetter: false },
-  { label: 'Shutouts', key: 'shutouts', format: 'integer', higherIsBetter: true },
+  { label: 'GP',  description: 'Games Played',                                                                          key: 'gamesPlayed',    format: 'integer',  higherIsBetter: true  },
+  { label: 'W',   description: 'Wins',                                                                                  key: 'wins',           format: 'integer',  higherIsBetter: true  },
+  { label: 'L',   description: 'Regulation Losses',                                                                     key: 'losses',         format: 'integer',  higherIsBetter: false },
+  { label: 'OTL', description: 'Overtime / Shootout Losses',                                                            key: 'otLosses',       format: 'integer',  higherIsBetter: false },
+  { label: 'SV%', description: 'Save Percentage — saves made per shot faced (league average ~.905)',                    key: 'savePercentage', format: 'decimal3', higherIsBetter: true  },
+  { label: 'GAA', description: 'Goals Against Average — goals allowed per 60 minutes played',                           key: 'goalsAgainstAvg', format: 'decimal2' as ComparisonStat['format'], higherIsBetter: false },
+  { label: 'SO',  description: 'Shutouts — games where the goalie allowed zero goals',                                  key: 'shutouts',       format: 'integer',  higherIsBetter: true  },
 ]
 
 /** Aggregate stats from an array of season totals */

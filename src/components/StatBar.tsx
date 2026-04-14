@@ -50,9 +50,12 @@ export default function StatBar({ stat, p1, p2 }: Props) {
 
       {/* Stat label */}
       <div className="text-center px-1">
-        <span className="text-xs font-medium text-[var(--text-muted)] whitespace-nowrap">
+        <abbr
+          title={stat.description}
+          className="text-xs font-medium text-[var(--text-muted)] whitespace-nowrap no-underline cursor-help border-b border-dotted border-[var(--text-muted)]/40"
+        >
           {stat.label}
-        </span>
+        </abbr>
       </div>
 
       {/* Player 2 side */}
