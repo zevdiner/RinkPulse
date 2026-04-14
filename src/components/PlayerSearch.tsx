@@ -133,7 +133,7 @@ function PlayerAvatar({ playerId, name }: { playerId: number; name: string }) {
   return (
     <div className="relative w-8 h-8 rounded-full overflow-hidden bg-[var(--border)] shrink-0">
       <Image
-        src={`https://assets.nhle.com/mugs/nhl/20242025/${playerId}.png`}
+        src={`https://assets.nhle.com/mugs/nhl/20252026/${playerId}.png`}
         alt={name}
         fill
         className="object-cover object-top"

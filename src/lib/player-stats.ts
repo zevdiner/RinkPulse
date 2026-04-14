@@ -5,8 +5,8 @@
 import type { NHLPlayerLanding, NHLSeasonTotal, PlayerStats, Timeframe } from '@/types'
 import { playerDisplayName } from './nhl-api'
 
-const CURRENT_SEASON = 20242025
-const RECENT_SEASONS = [20242025, 20232024, 20222023]
+const CURRENT_SEASON = 20252026
+const RECENT_SEASONS = [20252026, 20242025, 20232024]
 const REGULAR = 2
 const PLAYOFFS = 3
 

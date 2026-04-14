@@ -6,7 +6,8 @@ import type {
 } from '@/types'
 
 const BASE = 'https://api-web.nhle.com/v1'
-const CURRENT_SEASON = '20242025'
+const STATS_BASE = 'https://api.nhle.com/stats/rest/en'
+const CURRENT_SEASON = '20252026'
 
 async function nhlfetch<T>(path: string): Promise<T> {
   const res = await fetch(`${BASE}${path}`, {
@@ -21,10 +22,51 @@ async function nhlfetch<T>(path: string): Promise<T> {
 export async function searchPlayers(query: string): Promise<NHLPlayerSearchResult[]> {
   if (!query || query.length < 2) return []
   try {
-    const data = await nhlfetch<{ players: NHLPlayerSearchResult[] }>(
-      `/player-search?q=${encodeURIComponent(query)}&culture=en-us&limit=20`,
-    )
-    return (data.players ?? []).filter(p => p.active !== false)
+    const skaterExp = `seasonId=${CURRENT_SEASON} and skaterFullName likeIgnoreCase "%${query}%"`
+    const goalieExp = `seasonId=${CURRENT_SEASON} and goalieFullName likeIgnoreCase "%${query}%"`
+
+    const [skaterRes, goalieRes] = await Promise.all([
+      fetch(`${STATS_BASE}/skater/summary?limit=20&cayenneExp=${encodeURIComponent(skaterExp)}`, {
+        headers: { Accept: 'application/json' },
+      }),
+      fetch(`${STATS_BASE}/goalie/summary?limit=10&cayenneExp=${encodeURIComponent(goalieExp)}`, {
+        headers: { Accept: 'application/json' },
+      }),
+    ])
+
+    const results: NHLPlayerSearchResult[] = []
+
+    if (skaterRes.ok) {
+      const data = await skaterRes.json() as { data: Array<{ playerId: number; skaterFullName: string; positionCode: string; teamAbbrevs: string }> }
+      for (const s of data.data ?? []) {
+        const abbrev = s.teamAbbrevs?.split(',')[0].trim() ?? ''
+        results.push({
+          playerId: s.playerId,
+          name: s.skaterFullName,
+          position: s.positionCode,
+          teamAbbrev: abbrev,
+          headshot: playerHeadshotUrl(s.playerId),
+          active: true,
+        })
+      }
+    }
+
+    if (goalieRes.ok) {
+      const data = await goalieRes.json() as { data: Array<{ playerId: number; goalieFullName: string; teamAbbrevs: string }> }
+      for (const g of data.data ?? []) {
+        const abbrev = g.teamAbbrevs?.split(',')[0].trim() ?? ''
+        results.push({
+          playerId: g.playerId,
+          name: g.goalieFullName,
+          position: 'G',
+          teamAbbrev: abbrev,
+          headshot: playerHeadshotUrl(g.playerId),
+          active: true,
+        })
+      }
+    }
+
+    return results
   } catch {
     return []
   }
@@ -114,7 +156,7 @@ export function playerDisplayName(landing: NHLPlayerLanding): string {
 }
 
 export function playerHeadshotUrl(playerId: number): string {
-  return `https://assets.nhle.com/mugs/nhl/20242025/${playerId}.png`
+  return `https://assets.nhle.com/mugs/nhl/20252026/${playerId}.png`
 }
 
 export function teamLogoUrl(abbrev: string): string {

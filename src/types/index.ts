@@ -4,9 +4,9 @@ export interface NHLPlayerSearchResult {
   playerId: number
   name: string
   position: string
-  sweaterNumber: number
+  sweaterNumber?: number
   teamAbbrev: string
-  teamName: string
+  teamName?: string
   headshot: string
   active: boolean
 }
