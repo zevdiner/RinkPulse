@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
 import type { LeaderboardRow } from '@/types'
@@ -18,15 +18,40 @@ const HISTORICAL_PRESETS = [
   { value: 'hist-gamescore', label: 'Best Game Score' },
 ]
 
-type Mode = 'current' | 'historical'
+type Mode   = 'current' | 'historical'
+type SortKey = 'gamesPlayed' | 'goals' | 'assists' | 'points' | 'goalsPer82' | 'pointsPer82' | 'xGoalsPer82' | 'gameScore'
+type SortDir = 'desc' | 'asc'
+
+function defaultSort(preset: string): SortKey {
+  if (preset === 'goals')         return 'goals'
+  if (preset === 'assists')       return 'assists'
+  if (preset === 'hist-50goals')  return 'goalsPer82'
+  if (preset === 'hist-xg82')     return 'xGoalsPer82'
+  if (preset === 'hist-gamescore') return 'gameScore'
+  return 'points'
+}
+
+function sortRows(rows: LeaderboardRow[], col: SortKey, dir: SortDir): LeaderboardRow[] {
+  return [...rows].sort((a, b) => {
+    const av = (a[col] as number | undefined) ?? -Infinity
+    const bv = (b[col] as number | undefined) ?? -Infinity
+    return dir === 'desc' ? bv - av : av - bv
+  })
+}
 
 export default function LeaderboardTable() {
-  const [mode, setMode] = useState<Mode>('current')
+  const [mode, setMode]     = useState<Mode>('current')
   const [preset, setPreset] = useState('points')
-  const [rows, setRows] = useState<LeaderboardRow[]>([])
+  const [rows, setRows]     = useState<LeaderboardRow[]>([])
   const [loading, setLoading] = useState(true)
+  const [sortCol, setSortCol] = useState<SortKey>('points')
+  const [sortDir, setSortDir] = useState<SortDir>('desc')
 
+  // Reset sort when preset changes
   useEffect(() => {
+    const def = defaultSort(preset)
+    setSortCol(def)
+    setSortDir('desc')
     setLoading(true)
     fetch(`/api/leaderboard?preset=${preset}`)
       .then(r => r.json())
@@ -34,33 +59,52 @@ export default function LeaderboardTable() {
       .catch(() => setLoading(false))
   }, [preset])
 
-  const presets = mode === 'current' ? CURRENT_PRESETS : HISTORICAL_PRESETS
+  const displayRows = useMemo(
+    () => sortRows(rows, sortCol, sortDir),
+    [rows, sortCol, sortDir]
+  )
 
-  const isHist = preset.startsWith('hist-')
-  const isXG   = preset === 'hist-xg82'
-  const isGS   = preset === 'hist-gamescore'
-
-  // Primary (highlighted) column label
-  const primaryLabel =
-    isXG              ? 'xG/82' :
-    isGS              ? 'Gm Score' :
-    preset === 'hist-50goals'  ? 'G/82' :
-    preset === 'hist-100pts'   ? 'PTS' :
-    preset === 'goals'         ? 'G' :
-    preset === 'assists'       ? 'A' : 'PTS'
-
-  function primaryValue(r: LeaderboardRow): string {
-    if (isXG)                     return r.xGoalsPer82?.toFixed(1) ?? '—'
-    if (isGS)                     return r.gameScore?.toFixed(2) ?? '—'
-    if (preset === 'hist-50goals') return r.goalsPer82.toFixed(1)
-    if (preset === 'goals')        return String(r.goals)
-    if (preset === 'assists')      return String(r.assists)
-    return String(r.points)
+  function handleSort(col: SortKey) {
+    if (col === sortCol) {
+      setSortDir(d => d === 'desc' ? 'asc' : 'desc')
+    } else {
+      setSortCol(col)
+      setSortDir('desc')
+    }
   }
 
   function switchMode(m: Mode) {
     setMode(m)
     setPreset(m === 'current' ? 'points' : 'hist-100pts')
+  }
+
+  const presets = mode === 'current' ? CURRENT_PRESETS : HISTORICAL_PRESETS
+  const isHist  = preset.startsWith('hist-')
+  const isXG    = preset === 'hist-xg82'
+  const isGS    = preset === 'hist-gamescore'
+
+  // Columns to show
+  const showXG    = isXG
+  const showGS    = isGS
+  const showG82   = preset === 'hist-50goals'
+  const showPts82 = false  // keep table simple — raw stats only for non-advanced presets
+
+  // Column header helper
+  function ColHeader({
+    col, label, className = '',
+  }: { col: SortKey; label: string; className?: string }) {
+    const active = sortCol === col
+    const arrow  = active ? (sortDir === 'desc' ? ' ↓' : ' ↑') : ''
+    return (
+      <th
+        className={`px-2 py-2.5 cursor-pointer select-none hover:text-[var(--text-primary)] transition-colors whitespace-nowrap ${
+          active ? 'text-[var(--accent-blue)]' : ''
+        } ${className}`}
+        onClick={() => handleSort(col)}
+      >
+        {label}{arrow}
+      </th>
+    )
   }
 
   return (
@@ -101,10 +145,10 @@ export default function LeaderboardTable() {
 
       {/* Description */}
       {preset === 'hist-50goals' && (
-        <p className="text-xs text-[var(--text-muted)]">All 50+ goal seasons 2008–2026 (min 50 GP), sorted by goals/82</p>
+        <p className="text-xs text-[var(--text-muted)]">All 50+ goal seasons 2008–2026 (min 50 GP)</p>
       )}
       {preset === 'hist-100pts' && (
-        <p className="text-xs text-[var(--text-muted)]">All 100+ point seasons 2008–2026 (min 50 GP), sorted by total points</p>
+        <p className="text-xs text-[var(--text-muted)]">All 100+ point seasons 2008–2026 (min 50 GP)</p>
       )}
 
       {/* Table */}
@@ -139,14 +183,19 @@ export default function LeaderboardTable() {
                   <th className="text-left px-4 py-2.5 w-8">#</th>
                   <th className="text-left px-2 py-2.5">Player</th>
                   {isHist && <th className="text-center px-2 py-2.5 hidden sm:table-cell">Season</th>}
-                  <th className="text-center px-2 py-2.5">GP</th>
-                  <th className="text-center px-2 py-2.5">G</th>
-                  <th className="text-center px-2 py-2.5">A</th>
-                  <th className="text-center px-2 py-2.5 text-[var(--accent-blue)] font-bold">{primaryLabel}</th>
+                  <ColHeader col="gamesPlayed" label="GP"  className="text-center" />
+                  <ColHeader col="goals"       label="G"   className="text-center" />
+                  <ColHeader col="assists"     label="A"   className="text-center" />
+                  {showXG  && <ColHeader col="xGoalsPer82" label="xG/82"    className="text-center" />}
+                  {showGS  && <ColHeader col="gameScore"   label="Gm Score" className="text-center" />}
+                  {showG82 && <ColHeader col="goalsPer82"  label="G/82"     className="text-center" />}
+                  {!showXG && !showGS && !showG82 && (
+                    <ColHeader col="points" label="PTS" className="text-center" />
+                  )}
                 </tr>
               </thead>
               <tbody>
-                {rows.map((row, i) => (
+                {displayRows.map((row, i) => (
                   <tr
                     key={`${row.playerId}-${row.season}-${i}`}
                     className="border-b border-[var(--border)]/50 hover:bg-white/3 transition-colors"
@@ -158,13 +207,7 @@ export default function LeaderboardTable() {
                         className="flex items-center gap-2.5 hover:opacity-80 transition-opacity"
                       >
                         <div className="relative w-8 h-8 rounded-full overflow-hidden bg-[var(--border)] shrink-0">
-                          <Image
-                            src={row.headshot}
-                            alt={row.name}
-                            fill
-                            className="object-cover object-top"
-                            unoptimized
-                          />
+                          <Image src={row.headshot} alt={row.name} fill className="object-cover object-top" unoptimized />
                         </div>
                         <div className="min-w-0">
                           <div className="font-semibold text-[var(--text-primary)] truncate">{row.name}</div>
@@ -180,9 +223,12 @@ export default function LeaderboardTable() {
                     <td className="px-2 py-2.5 text-center tabular-nums text-[var(--text-secondary)]">{row.gamesPlayed}</td>
                     <td className="px-2 py-2.5 text-center tabular-nums text-[var(--text-secondary)]">{row.goals}</td>
                     <td className="px-2 py-2.5 text-center tabular-nums text-[var(--text-secondary)]">{row.assists}</td>
-                    <td className="px-2 py-2.5 text-center tabular-nums font-bold text-[var(--text-primary)]">
-                      {primaryValue(row)}
-                    </td>
+                    {showXG  && <td className="px-2 py-2.5 text-center tabular-nums font-bold text-[var(--text-primary)]">{row.xGoalsPer82?.toFixed(1) ?? '—'}</td>}
+                    {showGS  && <td className="px-2 py-2.5 text-center tabular-nums font-bold text-[var(--text-primary)]">{row.gameScore?.toFixed(2) ?? '—'}</td>}
+                    {showG82 && <td className="px-2 py-2.5 text-center tabular-nums font-bold text-[var(--text-primary)]">{row.goalsPer82.toFixed(1)}</td>}
+                    {!showXG && !showGS && !showG82 && (
+                      <td className="px-2 py-2.5 text-center tabular-nums font-bold text-[var(--text-primary)]">{row.points}</td>
+                    )}
                   </tr>
                 ))}
               </tbody>
@@ -192,8 +238,8 @@ export default function LeaderboardTable() {
 
         {!loading && rows.length > 0 && (
           <div className="px-4 py-2 border-t border-[var(--border)] text-[10px] text-[var(--text-muted)]">
-            {rows.length} result{rows.length !== 1 ? 's' : ''} ·{' '}
-            {isHist ? 'MoneyPuck data 2008–2026, all-situations' : 'NHL API · 2025–26 regular season'}
+            {rows.length} result{rows.length !== 1 ? 's' : ''} · click any column header to sort ·{' '}
+            {isHist ? 'MoneyPuck 2008–2026, all-situations' : 'NHL API · 2025–26 regular season'}
           </div>
         )}
       </div>
