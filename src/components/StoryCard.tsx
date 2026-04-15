@@ -1,6 +1,7 @@
 'use client'
 
 import Image from 'next/image'
+import Link from 'next/link'
 import { Share2, TrendingUp } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import type { Story } from '@/types'
@@ -36,36 +37,15 @@ export default function StoryCard({ story }: Props) {
       </div>
 
       {/* Player/Team identity */}
-      <div className="flex items-center gap-3">
-        {story.playerHeadshot ? (
-          <div className="relative w-12 h-12 rounded-full overflow-hidden bg-[var(--border)] shrink-0">
-            <Image
-              src={story.playerHeadshot}
-              alt={story.playerName ?? ''}
-              fill
-              className="object-cover object-top"
-              unoptimized
-            />
-          </div>
-        ) : story.teamLogo ? (
-          <div className="relative w-10 h-10 shrink-0">
-            <Image
-              src={story.teamLogo}
-              alt={story.teamAbbrev ?? ''}
-              fill
-              className="object-contain"
-              unoptimized
-            />
-          </div>
-        ) : null}
-
-        <div className="min-w-0">
-          <h2 className="font-semibold text-[var(--text-primary)] leading-snug truncate">
-            {story.title}
-          </h2>
-          <p className="text-sm text-[var(--text-secondary)] mt-0.5 truncate">{story.subtitle}</p>
+      {story.playerId ? (
+        <Link href={`/players/${story.playerId}`} className="flex items-center gap-3 hover:opacity-80 transition-opacity">
+          <PlayerIdentity story={story} />
+        </Link>
+      ) : (
+        <div className="flex items-center gap-3">
+          <PlayerIdentity story={story} />
         </div>
-      </div>
+      )}
 
       {/* Big stat */}
       <div className="flex items-end gap-3">
@@ -96,6 +76,40 @@ export default function StoryCard({ story }: Props) {
         </p>
       </div>
     </article>
+  )
+}
+
+function PlayerIdentity({ story }: { story: Story }) {
+  return (
+    <>
+      {story.playerHeadshot ? (
+        <div className="relative w-12 h-12 rounded-full overflow-hidden bg-[var(--border)] shrink-0">
+          <Image
+            src={story.playerHeadshot}
+            alt={story.playerName ?? ''}
+            fill
+            className="object-cover object-top"
+            unoptimized
+          />
+        </div>
+      ) : story.teamLogo ? (
+        <div className="relative w-10 h-10 shrink-0">
+          <Image
+            src={story.teamLogo}
+            alt={story.teamAbbrev ?? ''}
+            fill
+            className="object-contain"
+            unoptimized
+          />
+        </div>
+      ) : null}
+      <div className="min-w-0">
+        <h2 className="font-semibold text-[var(--text-primary)] leading-snug truncate">
+          {story.title}
+        </h2>
+        <p className="text-sm text-[var(--text-secondary)] mt-0.5 truncate">{story.subtitle}</p>
+      </div>
+    </>
   )
 }
 

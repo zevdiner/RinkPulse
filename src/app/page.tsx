@@ -1,6 +1,7 @@
 import { Suspense } from 'react'
 import StoryCard from '@/components/StoryCard'
 import TodayDate from '@/components/TodayDate'
+import MilestoneTracker from '@/components/MilestoneTracker'
 import { generateDailyStories } from '@/lib/stories'
 import type { Story } from '@/types'
 
@@ -20,6 +21,10 @@ export default function HomePage() {
 
       <Suspense fallback={<StoriesSkeleton />}>
         <StoriesFeed />
+      </Suspense>
+
+      <Suspense fallback={null}>
+        <MilestoneTracker />
       </Suspense>
     </div>
   )

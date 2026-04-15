@@ -16,6 +16,7 @@ import {
 import {
   getSkaterLeaders,
   getGoalieLeaders,
+  getPlayerGameLog,
   getStandings,
   playerHeadshotUrl,
   teamLogoUrl,
@@ -30,6 +31,8 @@ const BADGE_META: Record<StoryType, { label: string; color: BadgeColor }> = {
   'line-streak': { label: 'LINE CHEMISTRY', color: 'orange' },
   'rookie-comp': { label: 'ROOKIE WATCH', color: 'teal' },
   milestone: { label: 'MILESTONE', color: 'amber' },
+  'hot-streak': { label: 'HOT STREAK', color: 'red' },
+  'cold-streak': { label: 'COLD STREAK', color: 'teal' },
 }
 
 function makeId(type: StoryType, key: string): string {
@@ -402,18 +405,106 @@ async function rookieCompStories(): Promise<Story[]> {
   return stories
 }
 
+// ─── 6. Hot / Cold Streaks ───────────────────────────────────────────────────
+
+async function hotColdStories(): Promise<Story[]> {
+  const leaders = await getSkaterLeaders('points', 15)
+  const qualified = leaders.filter(l => l.gamesPlayed && l.gamesPlayed >= 20)
+  const top8 = qualified.slice(0, 8)
+
+  const logs = await Promise.all(
+    top8.map(l => getPlayerGameLog(l.playerId).catch(() => []))
+  )
+
+  const stories: Story[] = []
+  let hotFound = false
+  let coldFound = false
+
+  for (let i = 0; i < top8.length; i++) {
+    if (hotFound && coldFound) break
+    const leader = top8[i]
+    const gamelog = logs[i]
+    if (!gamelog || gamelog.length < 5) continue
+
+    const gp = leader.gamesPlayed!
+    const seasonPtsPerGame = leader.value / gp
+
+    const last5 = gamelog.slice(-5)
+    const last5Pts = last5.reduce((sum, g) => sum + (g.points ?? 0), 0)
+    const last5PtsPerGame = last5Pts / 5
+
+    const ratio = seasonPtsPerGame > 0 ? last5PtsPerGame / seasonPtsPerGame : 0
+    const name = leader.name.default
+    const headshot = leader.headshot || playerHeadshotUrl(leader.playerId)
+    const teamAbbrev = leader.teamAbbrev.default
+    const teamLogo = leader.teamLogo || teamLogoUrl(teamAbbrev)
+
+    if (!hotFound && ratio >= 1.6) {
+      hotFound = true
+      const last5Total = last5Pts
+      const pace = Math.round(last5PtsPerGame * 82)
+      stories.push({
+        id: makeId('hot-streak', String(leader.playerId)),
+        type: 'hot-streak',
+        title: `${name} is scorching — ${last5Total} pts in last 5 games`,
+        subtitle: `${pace} pts/82 pace over that stretch`,
+        description: `${name.split(' ').pop()} has gone ${last5Total} points in their last 5 games, a blistering ${last5PtsPerGame.toFixed(2)} pts/game — ${Math.round(ratio * 100 - 100)}% above their season average of ${seasonPtsPerGame.toFixed(2)}/game. They look unstoppable right now.`,
+        statLabel: 'Last 5 Games',
+        statValue: `${last5Total} PTS`,
+        historicalContext: `Season average: ${seasonPtsPerGame.toFixed(2)} pts/game. Last 5: ${last5PtsPerGame.toFixed(2)} pts/game.`,
+        percentile: Math.min(99, Math.round(75 + ratio * 8)),
+        badge: BADGE_META['hot-streak'].label,
+        badgeColor: BADGE_META['hot-streak'].color,
+        playerId: leader.playerId,
+        playerName: name,
+        playerHeadshot: headshot,
+        teamAbbrev,
+        teamLogo,
+        date: todayString(),
+      })
+    }
+
+    if (!coldFound && ratio <= 0.4 && seasonPtsPerGame >= 0.7) {
+      coldFound = true
+      const last5Total = last5Pts
+      stories.push({
+        id: makeId('cold-streak', String(leader.playerId)),
+        type: 'cold-streak',
+        title: `${name} has gone quiet — ${last5Total} pts in last 5 games`,
+        subtitle: `Well below their ${seasonPtsPerGame.toFixed(2)} pts/game season pace`,
+        description: `${name.split(' ').pop()} has managed just ${last5Total} points over their last 5 games after averaging ${seasonPtsPerGame.toFixed(2)} per game this season. A slump worth watching — are they injured, on a tough schedule, or just due to bounce back?`,
+        statLabel: 'Last 5 Games',
+        statValue: `${last5Total} PTS`,
+        historicalContext: `Season pace: ${seasonPtsPerGame.toFixed(2)} pts/game. Last 5: ${last5PtsPerGame.toFixed(2)} pts/game — a ${Math.round((1 - ratio) * 100)}% dip.`,
+        percentile: 60,
+        badge: BADGE_META['cold-streak'].label,
+        badgeColor: BADGE_META['cold-streak'].color,
+        playerId: leader.playerId,
+        playerName: name,
+        playerHeadshot: headshot,
+        teamAbbrev,
+        teamLogo,
+        date: todayString(),
+      })
+    }
+  }
+
+  return stories
+}
+
 // ─── Master Generator ─────────────────────────────────────────────────────────
 
 export async function generateDailyStories(): Promise<Story[]> {
   'use cache'
   cacheLife('days')
   cacheTag('daily-stories')
-  const [pace, gsaaStories, teamStories, milestones, rookies] = await Promise.allSettled([
+  const [pace, gsaaStories, teamStories, milestones, rookies, hotCold] = await Promise.allSettled([
     scoringPaceStories(),
     goalieGSAAStories(),
     teamCorsiStories(),
     milestoneStories(),
     rookieCompStories(),
+    hotColdStories(),
   ])
 
   const all: Story[] = [
@@ -422,6 +513,7 @@ export async function generateDailyStories(): Promise<Story[]> {
     ...(teamStories.status === 'fulfilled' ? teamStories.value : []),
     ...(milestones.status === 'fulfilled' ? milestones.value : []),
     ...(rookies.status === 'fulfilled' ? rookies.value : []),
+    ...(hotCold.status === 'fulfilled' ? hotCold.value : []),
   ]
 
   // Deduplicate by player, cap at 8, prioritize highest percentile

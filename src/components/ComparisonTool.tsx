@@ -4,6 +4,7 @@ import { useState, useCallback, useEffect } from 'react'
 import Image from 'next/image'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { Link2, AlertCircle } from 'lucide-react'
+import Link from 'next/link'
 import PlayerSearch from './PlayerSearch'
 import StatBar from './StatBar'
 import Sparkline from './Sparkline'
@@ -284,7 +285,7 @@ function CompareHeader({
   return (
     <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-4 p-5 border-b border-[var(--border)]">
       {/* P1 */}
-      <div className="flex flex-col items-center gap-2 text-center">
+      <Link href={`/players/${p1.playerId}`} className="flex flex-col items-center gap-2 text-center hover:opacity-80 transition-opacity">
         <div className="relative w-16 h-16 rounded-full overflow-hidden bg-[var(--border)] ring-2 ring-[var(--accent-blue)]/40">
           <Image src={p1.headshot} alt={p1.name} fill className="object-cover object-top" unoptimized />
         </div>
@@ -292,7 +293,7 @@ function CompareHeader({
           <div className="font-bold text-sm text-[var(--text-primary)]">{p1.name}</div>
           <div className="text-xs text-[var(--text-muted)]">{p1.position} · {p1.teamAbbrev}</div>
         </div>
-      </div>
+      </Link>
 
       {/* VS + tally */}
       <div className="flex flex-col items-center gap-1">
@@ -310,7 +311,7 @@ function CompareHeader({
       </div>
 
       {/* P2 */}
-      <div className="flex flex-col items-center gap-2 text-center">
+      <Link href={`/players/${p2.playerId}`} className="flex flex-col items-center gap-2 text-center hover:opacity-80 transition-opacity">
         <div className="relative w-16 h-16 rounded-full overflow-hidden bg-[var(--border)] ring-2 ring-red-500/40">
           <Image src={p2.headshot} alt={p2.name} fill className="object-cover object-top" unoptimized />
         </div>
@@ -318,7 +319,7 @@ function CompareHeader({
           <div className="font-bold text-sm text-[var(--text-primary)]">{p2.name}</div>
           <div className="text-xs text-[var(--text-muted)]">{p2.position} · {p2.teamAbbrev}</div>
         </div>
-      </div>
+      </Link>
     </div>
   )
 }

@@ -220,6 +220,8 @@ export type StoryType =
   | 'line-streak'
   | 'rookie-comp'
   | 'milestone'
+  | 'hot-streak'
+  | 'cold-streak'
 
 export type BadgeColor = 'blue' | 'green' | 'amber' | 'red' | 'purple' | 'teal' | 'orange'
 
