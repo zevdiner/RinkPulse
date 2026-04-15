@@ -20,7 +20,7 @@ export default function HomePage() {
       </div>
 
       {/* Feature discovery cards */}
-      <div className="grid gap-4 grid-cols-2 lg:grid-cols-4 mb-10">
+      <div className="grid gap-4 grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 mb-10">
         <Link href="/players" className="card p-4 flex flex-col gap-3 hover:border-[var(--accent-blue)]/60 transition-colors group">
           <div className="w-9 h-9 rounded-lg bg-[var(--accent-blue-dim)] flex items-center justify-center">
             <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden="true">
@@ -74,6 +74,23 @@ export default function HomePage() {
             </p>
           </div>
           <span className="text-xs text-[var(--accent-blue)] font-medium mt-auto">Compare →</span>
+        </Link>
+
+        <Link href="/teams" className="card p-4 flex flex-col gap-3 hover:border-[var(--accent-blue)]/60 transition-colors group">
+          <div className="w-9 h-9 rounded-lg bg-[var(--accent-blue-dim)] flex items-center justify-center">
+            <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden="true">
+              <path d="M9 2L3 5v5c0 3.5 2.5 6.5 6 7.5C15 16.5 15 13.5 15 10V5L9 2z" stroke="#4a90f7" strokeWidth="1.5" strokeLinejoin="round"/>
+            </svg>
+          </div>
+          <div>
+            <div className="font-semibold text-sm text-[var(--text-primary)] group-hover:text-[var(--accent-blue)] transition-colors">
+              Teams
+            </div>
+            <p className="text-xs text-[var(--text-muted)] mt-0.5 leading-snug">
+              Standings, roster stats &amp; goalie splits
+            </p>
+          </div>
+          <span className="text-xs text-[var(--accent-blue)] font-medium mt-auto">Browse →</span>
         </Link>
 
         <Link href="/lines" className="card p-4 flex flex-col gap-3 hover:border-[var(--accent-blue)]/60 transition-colors group">

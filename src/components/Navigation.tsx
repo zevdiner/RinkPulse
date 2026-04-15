@@ -4,7 +4,7 @@ import { useState, useRef, useEffect, useCallback } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 import { usePathname, useRouter } from 'next/navigation'
-import { BarChart2, Rss, Users, User, Trophy, Search, X, Loader2 } from 'lucide-react'
+import { BarChart2, Rss, Users, User, Trophy, Search, X, Loader2, Shield } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import type { NHLPlayerSearchResult } from '@/types'
 
@@ -57,6 +57,9 @@ export default function Navigation() {
             </NavLink>
             <NavLink href="/compare" active={path.startsWith('/compare')} icon={<BarChart2 size={15} />}>
               Compare
+            </NavLink>
+            <NavLink href="/teams" active={path.startsWith('/teams')} icon={<Shield size={15} />}>
+              Teams
             </NavLink>
             <NavLink href="/lines" active={path.startsWith('/lines')} icon={<Users size={15} />}>
               Lines

@@ -207,6 +207,56 @@ export async function getGamesOnDate(dateStr: string): Promise<NHLHistoricalGame
   } catch { return [] }
 }
 
+// ─── Club / Team Stats ────────────────────────────────────────────────────────
+
+export interface NHLClubSkaterStat {
+  playerId: number
+  headshot: string
+  firstName: { default: string }
+  lastName: { default: string }
+  positionCode: string
+  gamesPlayed: number
+  goals: number
+  assists: number
+  points: number
+  plusMinus: number
+  pim: number
+  shots: number
+  shootingPctg: number
+  powerPlayGoals: number
+  powerPlayPoints: number
+  shorthandedGoals: number
+  gameWinningGoals: number
+}
+
+export interface NHLClubGoalieStat {
+  playerId: number
+  headshot: string
+  firstName: { default: string }
+  lastName: { default: string }
+  gamesPlayed: number
+  gamesStarted: number
+  wins: number
+  losses: number
+  otLosses: number
+  goalsAgainstAvg: number
+  savePctg: number
+  shutouts: number
+}
+
+export interface NHLClubStatsResponse {
+  skaters: NHLClubSkaterStat[]
+  goalies: NHLClubGoalieStat[]
+}
+
+export async function getClubStats(abbrev: string): Promise<NHLClubStatsResponse | null> {
+  try {
+    return await nhlfetch<NHLClubStatsResponse>(`/club-stats/${abbrev}/now`)
+  } catch {
+    return null
+  }
+}
+
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 export function playerDisplayName(landing: NHLPlayerLanding): string {

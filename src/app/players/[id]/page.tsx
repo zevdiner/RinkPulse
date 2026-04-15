@@ -329,7 +329,12 @@ async function PlayerContent({ params }: { params: Promise<{ id: string }> }) {
                       unoptimized
                     />
                   </div>
-                  <span className="text-sm text-[var(--text-secondary)]">{teamAbbrev}</span>
+                  <Link
+                    href={`/teams/${teamAbbrev}`}
+                    className="text-sm text-[var(--text-secondary)] hover:text-[var(--accent-blue)] transition-colors"
+                  >
+                    {teamAbbrev}
+                  </Link>
                   <span className="text-[var(--text-muted)]">·</span>
                   <span className="text-sm text-[var(--text-secondary)]">{landing.position}</span>
                   {landing.sweaterNumber && (
