@@ -1,5 +1,6 @@
 import { Suspense } from 'react'
 import Link from 'next/link'
+
 import StoryCard from '@/components/StoryCard'
 import TodayDate from '@/components/TodayDate'
 import MilestoneTracker from '@/components/MilestoneTracker'
@@ -18,58 +19,77 @@ export default function HomePage() {
       </div>
 
       {/* Feature discovery cards */}
-      <div className="grid gap-4 sm:grid-cols-3 mb-10">
-        <Link href="/compare" className="card p-5 flex flex-col gap-3 hover:border-[var(--accent-blue)]/60 transition-colors group">
-          <div className="w-10 h-10 rounded-lg bg-[var(--accent-blue-dim)] flex items-center justify-center">
-            <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
-              <circle cx="6" cy="10" r="4" stroke="#4a90f7" strokeWidth="1.5"/>
-              <circle cx="14" cy="10" r="4" stroke="#ef4444" strokeWidth="1.5"/>
+      <div className="grid gap-4 grid-cols-2 lg:grid-cols-4 mb-10">
+        <Link href="/players" className="card p-4 flex flex-col gap-3 hover:border-[var(--accent-blue)]/60 transition-colors group">
+          <div className="w-9 h-9 rounded-lg bg-[var(--accent-blue-dim)] flex items-center justify-center">
+            <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden="true">
+              <circle cx="9" cy="6" r="3" stroke="#4a90f7" strokeWidth="1.5"/>
+              <path d="M2 16c0-3.314 3.134-6 7-6s7 2.686 7 6" stroke="#4a90f7" strokeWidth="1.5" strokeLinecap="round"/>
             </svg>
           </div>
           <div>
-            <div className="font-semibold text-[var(--text-primary)] group-hover:text-[var(--accent-blue)] transition-colors">
-              Compare Players
+            <div className="font-semibold text-sm text-[var(--text-primary)] group-hover:text-[var(--accent-blue)] transition-colors">
+              Players
             </div>
             <p className="text-xs text-[var(--text-muted)] mt-0.5 leading-snug">
-              Side-by-side stats across any timeframe with a downloadable stat card
+              Browse &amp; search profiles — career arc, percentiles, comps
             </p>
           </div>
-          <span className="text-xs text-[var(--accent-blue)] font-medium mt-auto">Open tool →</span>
+          <span className="text-xs text-[var(--accent-blue)] font-medium mt-auto">Browse →</span>
         </Link>
 
-        <Link href="/players/8478402" className="card p-5 flex flex-col gap-3 hover:border-[var(--accent-blue)]/60 transition-colors group">
-          <div className="w-10 h-10 rounded-lg bg-[var(--accent-blue-dim)] flex items-center justify-center">
-            <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
-              <circle cx="10" cy="7" r="3.5" stroke="#4a90f7" strokeWidth="1.5"/>
-              <path d="M3 18c0-3.866 3.134-7 7-7s7 3.134 7 7" stroke="#4a90f7" strokeWidth="1.5" strokeLinecap="round"/>
+        <Link href="/leaderboard" className="card p-4 flex flex-col gap-3 hover:border-[var(--accent-blue)]/60 transition-colors group">
+          <div className="w-9 h-9 rounded-lg bg-[var(--accent-blue-dim)] flex items-center justify-center">
+            <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden="true">
+              <rect x="2" y="10" width="3" height="6" rx="1" fill="#4a90f7"/>
+              <rect x="7.5" y="6" width="3" height="10" rx="1" fill="#4a90f7"/>
+              <rect x="13" y="2" width="3" height="14" rx="1" fill="#4a90f7"/>
             </svg>
           </div>
           <div>
-            <div className="font-semibold text-[var(--text-primary)] group-hover:text-[var(--accent-blue)] transition-colors">
-              Player Profiles
+            <div className="font-semibold text-sm text-[var(--text-primary)] group-hover:text-[var(--accent-blue)] transition-colors">
+              Leaderboard
             </div>
             <p className="text-xs text-[var(--text-muted)] mt-0.5 leading-snug">
-              Career arc, advanced percentiles, and comparable historical seasons
+              PPG pace, 50-goal seasons, 100-pt seasons since 2008
             </p>
           </div>
-          <span className="text-xs text-[var(--accent-blue)] font-medium mt-auto">Example: McDavid →</span>
+          <span className="text-xs text-[var(--accent-blue)] font-medium mt-auto">Explore →</span>
         </Link>
 
-        <Link href="/lines" className="card p-5 flex flex-col gap-3 hover:border-[var(--accent-blue)]/60 transition-colors group">
-          <div className="w-10 h-10 rounded-lg bg-[var(--accent-blue-dim)] flex items-center justify-center">
-            <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
-              <polyline points="2,14 6,8 10,11 14,5 18,7" stroke="#4a90f7" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+        <Link href="/compare" className="card p-4 flex flex-col gap-3 hover:border-[var(--accent-blue)]/60 transition-colors group">
+          <div className="w-9 h-9 rounded-lg bg-[var(--accent-blue-dim)] flex items-center justify-center">
+            <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden="true">
+              <circle cx="5" cy="9" r="3.5" stroke="#4a90f7" strokeWidth="1.5"/>
+              <circle cx="13" cy="9" r="3.5" stroke="#ef4444" strokeWidth="1.5"/>
             </svg>
           </div>
           <div>
-            <div className="font-semibold text-[var(--text-primary)] group-hover:text-[var(--accent-blue)] transition-colors">
-              Line Analytics
+            <div className="font-semibold text-sm text-[var(--text-primary)] group-hover:text-[var(--accent-blue)] transition-colors">
+              Compare
             </div>
             <p className="text-xs text-[var(--text-muted)] mt-0.5 leading-snug">
-              Search any line combination — xG%, Corsi, Fenwick, and more
+              Side-by-side stats with sparklines &amp; downloadable stat card
             </p>
           </div>
-          <span className="text-xs text-[var(--accent-blue)] font-medium mt-auto">Search lines →</span>
+          <span className="text-xs text-[var(--accent-blue)] font-medium mt-auto">Compare →</span>
+        </Link>
+
+        <Link href="/lines" className="card p-4 flex flex-col gap-3 hover:border-[var(--accent-blue)]/60 transition-colors group">
+          <div className="w-9 h-9 rounded-lg bg-[var(--accent-blue-dim)] flex items-center justify-center">
+            <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden="true">
+              <polyline points="2,13 5,7 9,10 13,4 16,6" stroke="#4a90f7" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
+          </div>
+          <div>
+            <div className="font-semibold text-sm text-[var(--text-primary)] group-hover:text-[var(--accent-blue)] transition-colors">
+              Lines
+            </div>
+            <p className="text-xs text-[var(--text-muted)] mt-0.5 leading-snug">
+              Search any line — xG%, Corsi, Fenwick, and more
+            </p>
+          </div>
+          <span className="text-xs text-[var(--accent-blue)] font-medium mt-auto">Search →</span>
         </Link>
       </div>
 

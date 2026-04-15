@@ -151,6 +151,42 @@ export async function getPlayerGameLog(
   }
 }
 
+// ─── Skater Stats (stats/rest summary endpoint) ───────────────────────────────
+
+export interface NHLSkaterStats {
+  playerId: number
+  skaterFullName: string
+  positionCode: string
+  teamAbbrevs: string
+  gamesPlayed: number
+  goals: number
+  assists: number
+  points: number
+  plusMinus: number
+  shots: number
+  shootingPctg: number
+  powerPlayGoals: number
+  powerPlayPoints: number
+}
+
+export async function getSkaterStats(
+  sort: 'points' | 'goals' | 'assists' = 'points',
+  limit = 100,
+): Promise<NHLSkaterStats[]> {
+  const exp = `seasonId=${CURRENT_SEASON} and gameTypeId=2`
+  try {
+    const res = await fetch(
+      `${STATS_BASE}/skater/summary?limit=${limit}&sort=${sort}&cayenneExp=${encodeURIComponent(exp)}`,
+      { headers: { Accept: 'application/json' } },
+    )
+    if (!res.ok) return []
+    const data = await res.json() as { data: NHLSkaterStats[] }
+    return data.data ?? []
+  } catch {
+    return []
+  }
+}
+
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 export function playerDisplayName(landing: NHLPlayerLanding): string {

@@ -291,6 +291,25 @@ export interface ComparisonStat {
 
 export type SparkMetric = 'points' | 'plusMinus' | 'toi'
 
+// ─── Leaderboard Types ───────────────────────────────────────────────────────
+
+export interface LeaderboardRow {
+  playerId: number
+  name: string
+  team: string
+  position: string
+  season: string
+  headshot: string
+  gamesPlayed: number
+  goals: number
+  assists: number
+  points: number
+  pointsPer82: number
+  goalsPer82: number
+  xGoalsPer82?: number
+  gameScore?: number
+}
+
 export interface NHLGameLogEntry {
   gameId: number
   teamAbbrev: string

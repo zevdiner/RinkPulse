@@ -14,6 +14,7 @@ import {
   pointsPer82,
 } from '@/lib/moneypuck'
 import { formatSeason } from '@/lib/utils'
+import ShareButton from '@/components/ShareButton'
 import CareerArcChart from '@/components/CareerArcChart'
 import SeasonTable from '@/components/SeasonTable'
 import PercentileBars from '@/components/PercentileBars'
@@ -259,12 +260,15 @@ async function PlayerContent({ params }: { params: Promise<{ id: string }> }) {
                   )}
                 </div>
               </div>
-              <Link
-                href={`/compare?p1=${playerId}`}
-                className="shrink-0 px-4 py-2 rounded-lg bg-[var(--accent-blue-dim)] text-[var(--accent-blue)] text-sm font-medium hover:bg-[var(--accent-blue)] hover:text-white transition-all border border-[var(--accent-blue)]/30"
-              >
-                Compare →
-              </Link>
+              <div className="flex items-center gap-2">
+                <ShareButton />
+                <Link
+                  href={`/compare?p1=${playerId}`}
+                  className="shrink-0 px-4 py-2 rounded-lg bg-[var(--accent-blue-dim)] text-[var(--accent-blue)] text-sm font-medium hover:bg-[var(--accent-blue)] hover:text-white transition-all border border-[var(--accent-blue)]/30"
+                >
+                  Compare →
+                </Link>
+              </div>
             </div>
 
             {/* Quick bio */}
