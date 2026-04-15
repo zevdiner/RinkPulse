@@ -27,7 +27,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <main className="page-content flex-1">{children}</main>
         <footer className="page-content border-t border-[var(--border)] py-6 mt-12">
           <div className="max-w-6xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-2 text-sm text-[var(--text-muted)]">
-            <span>RinkPulse — NHL data via the NHL public API &amp; MoneyPuck (2008–2024)</span>
+            <span>RinkPulse — NHL data via the NHL public API &amp; MoneyPuck (2008–2026)</span>
             <span>Not affiliated with the NHL</span>
           </div>
         </footer>

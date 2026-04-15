@@ -169,16 +169,28 @@ export function topHistoricalTeamsByXGF(minGames = 60): MPTeam[] {
     .sort((a, b) => b.xGoalsPercentage - a.xGoalsPercentage)
 }
 
+/** Normalize a player name for fuzzy matching:
+ *  lowercases, strips diacritics, collapses hyphens/apostrophes/dots */
+function normalizeName(name: string): string {
+  return name
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')  // strip accent marks
+    .replace(/['\u2019\-\.]/g, '')    // strip apostrophes, hyphens, dots
+    .replace(/\s+/g, ' ')
+    .trim()
+}
+
 /** Find historical seasons for a specific player by name */
 export function skaterHistoricalSeasons(name: string): MPSkater[] {
-  const lower = name.toLowerCase()
-  return getSkaterSeasons(20).filter(s => s.name.toLowerCase() === lower)
+  const norm = normalizeName(name)
+  return getSkaterSeasons(20).filter(s => normalizeName(s.name) === norm)
 }
 
 /** Find historical seasons for a specific goalie by name */
 export function goalieHistoricalSeasons(name: string): MPGoalie[] {
-  const lower = name.toLowerCase()
-  return getGoalieSeasons(10).filter(g => g.name.toLowerCase() === lower)
+  const norm = normalizeName(name)
+  return getGoalieSeasons(10).filter(g => normalizeName(g.name) === norm)
 }
 
 /** Whether any data files are present */

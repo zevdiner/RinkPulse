@@ -33,7 +33,7 @@ export default function PercentileBars({ entries, season }: Props) {
   return (
     <div className="flex flex-col gap-3">
       <p className="text-xs text-[var(--text-muted)]">
-        Compared to all skater seasons (2008–2024) with 50+ games played.
+        Compared to all skater seasons (2008–2026) with 50+ games played.
       </p>
       {entries.map(e => {
         const color = barColor(e.percentile)

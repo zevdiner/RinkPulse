@@ -118,8 +118,12 @@ async function PlayerContent({ params }: { params: Promise<{ id: string }> }) {
 
   if (!isGoalie) {
     const allSeasons = getSkaterSeasons(50)
-    const mpSeasons = skaterHistoricalSeasons(name)
-    const currentSeason = nhlRegular.find(s => s.season === CURRENT_SEASON)
+    // Guard: if CSV data isn't loaded (Vercel cold boot edge case), skip percentiles
+    // rather than showing everyone at 50th percentile
+    const mpSeasons = allSeasons.length >= 100 ? skaterHistoricalSeasons(name) : []
+    const currentSeason = allSeasons.length >= 100
+      ? nhlRegular.find(s => s.season === CURRENT_SEASON)
+      : undefined
     const mpCurrent = mpSeasons.find(s => s.season === CURRENT_SEASON) ??
       mpSeasons[mpSeasons.length - 1]
 
