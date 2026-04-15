@@ -10,6 +10,7 @@ import {
   skaterHistoricalSeasons,
   goalieHistoricalSeasons,
   getSkaterSeasons,
+  getGoalieSeasons,
   computePercentile,
   pointsPer82,
 } from '@/lib/moneypuck'
@@ -114,25 +115,28 @@ async function PlayerContent({ params }: { params: Promise<{ id: string }> }) {
       goals: s.goals ?? null,
     }))
 
-  // ── MoneyPuck percentiles (skaters only) ──────────────────────────────────
+  // ── MoneyPuck percentiles ─────────────────────────────────────────────────
   const percentileEntries: PercentileEntry[] = []
+  let refSeasonLabel: string | null = null
 
   if (!isGoalie) {
     const allSeasons = getSkaterSeasons(50)
     // Guard: if CSV data isn't loaded (Vercel cold boot edge case), skip percentiles
     // rather than showing everyone at 50th percentile
     const mpSeasons = allSeasons.length >= 100 ? skaterHistoricalSeasons(name) : []
-    const currentSeason = allSeasons.length >= 100
-      ? nhlRegular.find(s => s.season === CURRENT_SEASON)
+    const refSeason = allSeasons.length >= 100
+      ? (nhlRegular.find(s => s.season === CURRENT_SEASON && (s.gamesPlayed ?? 0) >= 5) ??
+         [...nhlRegular].reverse().find(s => (s.gamesPlayed ?? 0) >= 5))
       : undefined
-    const mpCurrent = mpSeasons.find(s => s.season === CURRENT_SEASON) ??
+    refSeasonLabel = refSeason ? formatSeason(refSeason.season) : null
+    const mpRef = mpSeasons.find(s => s.season === (refSeason?.season ?? CURRENT_SEASON)) ??
       mpSeasons[mpSeasons.length - 1]
 
-    if (currentSeason && currentSeason.gamesPlayed >= 10) {
-      const gp = currentSeason.gamesPlayed
+    if (refSeason && refSeason.gamesPlayed >= 5) {
+      const gp = refSeason.gamesPlayed
 
       const allPts82 = allSeasons.map(s => pointsPer82(s))
-      const pts82 = ((currentSeason.points ?? 0) / gp) * 82
+      const pts82 = ((refSeason.points ?? 0) / gp) * 82
       percentileEntries.push({
         label: 'Pts/82',
         description: 'Points per 82 games pace',
@@ -141,7 +145,7 @@ async function PlayerContent({ params }: { params: Promise<{ id: string }> }) {
       })
 
       const allG82 = allSeasons.map(s => (s.I_F_goals / s.games_played) * 82)
-      const g82 = ((currentSeason.goals ?? 0) / gp) * 82
+      const g82 = ((refSeason.goals ?? 0) / gp) * 82
       percentileEntries.push({
         label: 'G/82',
         description: 'Goals per 82 games pace',
@@ -149,9 +153,9 @@ async function PlayerContent({ params }: { params: Promise<{ id: string }> }) {
         percentile: computePercentile(g82, allG82),
       })
 
-      if (mpCurrent) {
+      if (mpRef) {
         const allXG82 = allSeasons.map(s => (s.I_F_xGoals / s.games_played) * 82)
-        const xg82 = (mpCurrent.I_F_xGoals / mpCurrent.games_played) * 82
+        const xg82 = (mpRef.I_F_xGoals / mpRef.games_played) * 82
         percentileEntries.push({
           label: 'xG/82',
           description: 'Expected goals per 82 — shot quality metric',
@@ -163,17 +167,68 @@ async function PlayerContent({ params }: { params: Promise<{ id: string }> }) {
         percentileEntries.push({
           label: 'CF%',
           description: 'Corsi For % — shot attempt share while on ice',
-          value: `${(mpCurrent.onIce_corsiPercentage * 100).toFixed(1)}%`,
-          percentile: computePercentile(mpCurrent.onIce_corsiPercentage, allCF),
+          value: `${(mpRef.onIce_corsiPercentage * 100).toFixed(1)}%`,
+          percentile: computePercentile(mpRef.onIce_corsiPercentage, allCF),
         })
 
         const allGS = allSeasons.map(s => s.gameScore)
         percentileEntries.push({
           label: 'Game Score',
           description: 'MoneyPuck composite performance metric',
-          value: mpCurrent.gameScore.toFixed(2),
-          percentile: computePercentile(mpCurrent.gameScore, allGS),
+          value: mpRef.gameScore.toFixed(2),
+          percentile: computePercentile(mpRef.gameScore, allGS),
         })
+      }
+    }
+  }
+
+  if (isGoalie) {
+    const allGoalieSeasons = getGoalieSeasons(15)
+    if (allGoalieSeasons.length >= 20) {
+      // Reference season: current season or most recent with ≥5 GP
+      const refSeason =
+        nhlRegular.find(s => s.season === CURRENT_SEASON && (s.gamesPlayed ?? 0) >= 5) ??
+        [...nhlRegular].reverse().find(s => (s.gamesPlayed ?? 0) >= 5)
+
+      if (refSeason) {
+        refSeasonLabel = formatSeason(refSeason.season)
+
+        // SV% — higher is better
+        if (refSeason.savePercentage != null) {
+          const allSvp = allGoalieSeasons.map(g => (g.ongoal - g.goals) / g.ongoal)
+          percentileEntries.push({
+            label: 'SV%',
+            description: 'Save percentage',
+            value: refSeason.savePercentage.toFixed(3),
+            percentile: computePercentile(refSeason.savePercentage, allSvp),
+          })
+        }
+
+        // GAA — lower is better, invert percentile
+        if (refSeason.goalsAgainstAvg != null) {
+          const allGAA = allGoalieSeasons.map(g => (g.goals / g.icetime) * 3600)
+          percentileEntries.push({
+            label: 'GAA',
+            description: 'Goals against average — lower is better',
+            value: refSeason.goalsAgainstAvg.toFixed(2),
+            percentile: 100 - computePercentile(refSeason.goalsAgainstAvg, allGAA),
+          })
+        }
+
+        // GSAA from MoneyPuck — higher is better
+        const mpGoalieSeasons = goalieHistoricalSeasons(name)
+        const mpRef = mpGoalieSeasons.find(s => s.season === refSeason.season) ??
+          mpGoalieSeasons[mpGoalieSeasons.length - 1]
+        if (mpRef) {
+          const allGSAA = allGoalieSeasons.map(g => g.xGoals - g.goals)
+          const gsaaVal = mpRef.xGoals - mpRef.goals
+          percentileEntries.push({
+            label: 'GSAA',
+            description: 'Goals saved above average (MoneyPuck)',
+            value: gsaaVal.toFixed(1),
+            percentile: computePercentile(gsaaVal, allGSAA),
+          })
+        }
       }
     }
   }
@@ -182,9 +237,12 @@ async function PlayerContent({ params }: { params: Promise<{ id: string }> }) {
   const historicalComps: HistoricalComp[] = []
 
   if (!isGoalie) {
-    const currentSeason = nhlRegular.find(s => s.season === CURRENT_SEASON)
-    if (currentSeason && currentSeason.gamesPlayed >= 20) {
-      const refPer82 = ((currentSeason.points ?? 0) / currentSeason.gamesPlayed) * 82
+    const compRefSeason =
+      nhlRegular.find(s => s.season === CURRENT_SEASON && (s.gamesPlayed ?? 0) >= 10) ??
+      [...nhlRegular].reverse().find(s => (s.gamesPlayed ?? 0) >= 10)
+
+    if (compRefSeason && compRefSeason.gamesPlayed >= 10) {
+      const refPer82 = ((compRefSeason.points ?? 0) / compRefSeason.gamesPlayed) * 82
       const allSkaterSeasons = getSkaterSeasons(50)
 
       const comps = allSkaterSeasons
@@ -208,6 +266,28 @@ async function PlayerContent({ params }: { params: Promise<{ id: string }> }) {
   const careerGoals = nhlRegular.reduce((sum, s) => sum + (s.goals ?? 0), 0)
   const careerPoints = nhlRegular.reduce((sum, s) => sum + (s.points ?? 0), 0)
   const careerGP = nhlRegular.reduce((sum, s) => sum + (s.gamesPlayed ?? 0), 0)
+
+  // Goalie career totals
+  const careerWins = isGoalie ? nhlRegular.reduce((sum, s) => sum + (s.wins ?? 0), 0) : 0
+  const careerLosses = isGoalie ? nhlRegular.reduce((sum, s) => sum + (s.losses ?? 0), 0) : 0
+  const careerSvp = (() => {
+    if (!isGoalie) return null
+    const seasonsWithSvp = nhlRegular.filter(s => s.savePercentage != null && s.gamesPlayed > 0)
+    if (seasonsWithSvp.length === 0) return null
+    // Weight by games started (fall back to gamesPlayed)
+    const totalGP = seasonsWithSvp.reduce((sum, s) => sum + (s.gamesStarted ?? s.gamesPlayed), 0)
+    if (totalGP === 0) return null
+    const weighted = seasonsWithSvp.reduce(
+      (sum, s) => sum + (s.savePercentage ?? 0) * (s.gamesStarted ?? s.gamesPlayed),
+      0
+    )
+    return weighted / totalGP
+  })()
+
+  const compRefSeason = !isGoalie
+    ? (nhlRegular.find(s => s.season === CURRENT_SEASON && (s.gamesPlayed ?? 0) >= 10) ??
+       [...nhlRegular].reverse().find(s => (s.gamesPlayed ?? 0) >= 10))
+    : undefined
 
   return (
     <>
@@ -291,19 +371,29 @@ async function PlayerContent({ params }: { params: Promise<{ id: string }> }) {
 
             {/* Career totals */}
             <div className="mt-4 flex gap-5 flex-wrap">
-              {[
+              {isGoalie ? [
                 { label: 'Career GP', value: careerGP },
-                !isGoalie && { label: 'Career G', value: careerGoals },
-                !isGoalie && { label: 'Career PTS', value: careerPoints },
+                { label: 'Career W', value: careerWins },
+                { label: 'Career L', value: careerLosses },
+                careerSvp != null && { label: 'Career SV%', value: careerSvp.toFixed(3) },
               ].filter(Boolean).map(item => {
-                const { label, value } = item as { label: string; value: number }
+                const { label, value } = item as { label: string; value: string | number }
                 return (
                   <div key={label}>
                     <div className="text-xl font-bold tabular-nums text-[var(--text-primary)]">{value}</div>
                     <div className="text-[10px] text-[var(--text-muted)] uppercase tracking-wider">{label}</div>
                   </div>
                 )
-              })}
+              }) : [
+                { label: 'Career GP', value: careerGP },
+                { label: 'Career G', value: careerGoals },
+                { label: 'Career PTS', value: careerPoints },
+              ].map(item => (
+                <div key={item.label}>
+                  <div className="text-xl font-bold tabular-nums text-[var(--text-primary)]">{item.value}</div>
+                  <div className="text-[10px] text-[var(--text-muted)] uppercase tracking-wider">{item.label}</div>
+                </div>
+              ))}
             </div>
           </div>
         </div>
@@ -330,9 +420,9 @@ async function PlayerContent({ params }: { params: Promise<{ id: string }> }) {
         {percentileEntries.length > 0 && (
           <div className="card p-5">
             <h2 className="text-sm font-semibold text-[var(--text-primary)] mb-4">
-              Advanced Percentiles · {formatSeason(CURRENT_SEASON)}
+              Advanced Percentiles{refSeasonLabel ? ` · ${refSeasonLabel}` : ''}
             </h2>
-            <PercentileBars entries={percentileEntries} season={formatSeason(CURRENT_SEASON)} />
+            <PercentileBars entries={percentileEntries} season={refSeasonLabel ?? formatSeason(CURRENT_SEASON)} />
           </div>
         )}
 
@@ -343,10 +433,7 @@ async function PlayerContent({ params }: { params: Promise<{ id: string }> }) {
               comps={historicalComps}
               playerName={name}
               referencePer82={
-                (() => {
-                  const cur = nhlRegular.find(s => s.season === CURRENT_SEASON)
-                  return cur ? ((cur.points ?? 0) / cur.gamesPlayed) * 82 : 0
-                })()
+                compRefSeason ? ((compRefSeason.points ?? 0) / compRefSeason.gamesPlayed) * 82 : 0
               }
             />
           </div>

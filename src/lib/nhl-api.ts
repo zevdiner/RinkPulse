@@ -189,6 +189,24 @@ export async function getSkaterStats(
   }
 }
 
+// ─── Historical Games by Date ─────────────────────────────────────────────────
+
+export interface NHLHistoricalGame {
+  season: number
+  gameType: number // 2=regular, 3=playoff
+  gameDate: string
+  homeTeam: { abbrev: string; score: number; commonName?: { default: string } }
+  awayTeam: { abbrev: string; score: number; commonName?: { default: string } }
+  gameOutcome?: { lastPeriodType: string } // REG, OT, SO
+}
+
+export async function getGamesOnDate(dateStr: string): Promise<NHLHistoricalGame[]> {
+  try {
+    const data = await nhlfetch<{ games: NHLHistoricalGame[] }>(`/score/${dateStr}`)
+    return data.games ?? []
+  } catch { return [] }
+}
+
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 export function playerDisplayName(landing: NHLPlayerLanding): string {
