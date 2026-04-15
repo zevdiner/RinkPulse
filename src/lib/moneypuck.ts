@@ -68,7 +68,12 @@ let _lines: MPLine[] | null = null
 let _teams: MPTeam[] | null = null
 
 export function getSkaters(): MPSkater[] {
-  if (!_skaters) _skaters = readCSV<MPSkater>('skaters.csv', SKATER_COLS)
+  if (!_skaters) {
+    // skaters_slim.csv is the committed, Vercel-safe version (situation=all, key cols only, ~1.4 MB).
+    // Fall back to skaters.csv when running locally with the full file.
+    _skaters = readCSV<MPSkater>('skaters_slim.csv', SKATER_COLS)
+    if (_skaters.length === 0) _skaters = readCSV<MPSkater>('skaters.csv', SKATER_COLS)
+  }
   return _skaters
 }
 

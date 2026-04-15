@@ -45,5 +45,6 @@ next-env.d.ts
 # For skaters + lines historical context, connect Supabase (see data/README.md).
 data/skaters.csv
 data/lines.csv
-# lines_slim.csv is intentionally committed — filtered, Vercel-safe version
+# *_slim.csv files are intentionally committed — filtered, Vercel-safe versions (~1.4 MB each)
 !data/lines_slim.csv
+!data/skaters_slim.csv
