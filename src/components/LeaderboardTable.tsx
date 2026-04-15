@@ -6,12 +6,9 @@ import Link from 'next/link'
 import type { LeaderboardRow } from '@/types'
 
 const CURRENT_PRESETS = [
-  { value: 'points',       label: 'Points' },
-  { value: 'goals',        label: 'Goals' },
-  { value: 'assists',      label: 'Assists' },
-  { value: 'ppg-pace',     label: 'PPG Pace' },
-  { value: '50-goal-pace', label: 'Top Goal Pace' },
-  { value: '100-pt-pace',  label: '100-Pt Pace' },
+  { value: 'points',  label: 'Points' },
+  { value: 'goals',   label: 'Goals' },
+  { value: 'assists', label: 'Assists' },
 ]
 
 const HISTORICAL_PRESETS = [
@@ -39,27 +36,25 @@ export default function LeaderboardTable() {
 
   const presets = mode === 'current' ? CURRENT_PRESETS : HISTORICAL_PRESETS
 
-  const isHist   = preset.startsWith('hist-')
-  const isXG     = preset === 'hist-xg82'
-  const isGS     = preset === 'hist-gamescore'
-  const isGoalP  = preset === '50-goal-pace' || preset === 'hist-50goals'
-  const isPtPace = ['ppg-pace', '100-pt-pace', 'hist-100pts'].includes(preset)
+  const isHist = preset.startsWith('hist-')
+  const isXG   = preset === 'hist-xg82'
+  const isGS   = preset === 'hist-gamescore'
 
+  // Primary (highlighted) column label
   const primaryLabel =
-    isXG     ? 'xG/82' :
-    isGS     ? 'Gm Score' :
-    isGoalP  ? 'G/82' :
-    isPtPace ? 'Pts/82' :
-    preset === 'goals'   ? 'G' :
-    preset === 'assists' ? 'A' : 'PTS'
+    isXG              ? 'xG/82' :
+    isGS              ? 'Gm Score' :
+    preset === 'hist-50goals'  ? 'G/82' :
+    preset === 'hist-100pts'   ? 'PTS' :
+    preset === 'goals'         ? 'G' :
+    preset === 'assists'       ? 'A' : 'PTS'
 
   function primaryValue(r: LeaderboardRow): string {
-    if (isXG)    return r.xGoalsPer82?.toFixed(1) ?? '—'
-    if (isGS)    return r.gameScore?.toFixed(2) ?? '—'
-    if (isGoalP) return r.goalsPer82.toFixed(1)
-    if (isPtPace) return r.pointsPer82.toFixed(1)
-    if (preset === 'goals')   return String(r.goals)
-    if (preset === 'assists') return String(r.assists)
+    if (isXG)                     return r.xGoalsPer82?.toFixed(1) ?? '—'
+    if (isGS)                     return r.gameScore?.toFixed(2) ?? '—'
+    if (preset === 'hist-50goals') return r.goalsPer82.toFixed(1)
+    if (preset === 'goals')        return String(r.goals)
+    if (preset === 'assists')      return String(r.assists)
     return String(r.points)
   }
 
@@ -104,13 +99,7 @@ export default function LeaderboardTable() {
         ))}
       </div>
 
-      {/* Description chips */}
-      {preset === 'ppg-pace' && (
-        <p className="text-xs text-[var(--text-muted)]">Players on pace for 82+ points (min 20 GP)</p>
-      )}
-      {preset === '100-pt-pace' && (
-        <p className="text-xs text-[var(--text-muted)]">Players on pace for 100+ points (min 20 GP)</p>
-      )}
+      {/* Description */}
       {preset === 'hist-50goals' && (
         <p className="text-xs text-[var(--text-muted)]">All 50+ goal seasons 2008–2026 (min 50 GP), sorted by goals/82</p>
       )}

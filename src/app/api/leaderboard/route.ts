@@ -1,7 +1,7 @@
 import { type NextRequest } from 'next/server'
-import { getSkaterLeaders, playerHeadshotUrl } from '@/lib/nhl-api'
+import { getSkaterStats, playerHeadshotUrl } from '@/lib/nhl-api'
 import { getSkaterSeasons, pointsPer82 } from '@/lib/moneypuck'
-import type { LeaderboardRow, NHLStatLeader } from '@/types'
+import type { LeaderboardRow } from '@/types'
 
 function fmtSeason(s: number): string {
   const str = String(s)
@@ -9,53 +9,29 @@ function fmtSeason(s: number): string {
 }
 
 async function currentLeaderboard(preset: string): Promise<LeaderboardRow[]> {
-  // Determine which stat to sort by on the NHL API side
-  const category =
-    preset === 'goals'         ? 'goals' :
-    preset === 'assists'       ? 'assists' :
-    preset === '50-goal-pace'  ? 'goals' : 'points'
+  const sortKey =
+    preset === 'goals'   ? 'goals' :
+    preset === 'assists' ? 'assists' : 'points'
 
-  // Fetch more rows for pace presets since we'll filter down
-  const limit = ['ppg-pace', '100-pt-pace', '50-goal-pace'].includes(preset) ? 150 : 50
+  const skaters = await getSkaterStats(sortKey, 100)
 
-  const leaders: NHLStatLeader[] = await getSkaterLeaders(category, limit)
-
-  let rows: LeaderboardRow[] = leaders.map(p => {
-    const gp   = p.gamesPlayed ?? 1
-    const g    = p.goals    ?? (category === 'goals'   ? p.value : 0)
-    const a    = p.assists  ?? (category === 'assists'  ? p.value : 0)
-    const pts  = p.points   ?? (category === 'points'  ? p.value : 0)
+  const rows: LeaderboardRow[] = skaters.map(s => {
+    const gp = s.gamesPlayed || 1
     return {
-      playerId:    p.playerId,
-      name:        p.name?.default ?? '',
-      team:        p.teamAbbrev?.default ?? '',
-      position:    p.position,
+      playerId:    s.playerId,
+      name:        s.skaterFullName,
+      team:        s.teamAbbrevs?.split(',')[0].trim() ?? '',
+      position:    s.positionCode,
       season:      '2025–26',
-      headshot:    p.headshot,
-      gamesPlayed: gp,
-      goals:       Math.round(g),
-      assists:     Math.round(a),
-      points:      Math.round(pts),
-      pointsPer82: pts > 0 ? (pts / gp) * 82 : 0,
-      goalsPer82:  g   > 0 ? (g   / gp) * 82 : 0,
+      headshot:    playerHeadshotUrl(s.playerId),
+      gamesPlayed: s.gamesPlayed,
+      goals:       s.goals,
+      assists:     s.assists,
+      points:      s.points,
+      pointsPer82: (s.points / gp) * 82,
+      goalsPer82:  (s.goals  / gp) * 82,
     }
   })
-
-  // Apply pace filters
-  if (preset === 'ppg-pace') {
-    rows = rows
-      .filter(r => r.gamesPlayed >= 20 && r.pointsPer82 >= 82)
-      .sort((a, b) => b.pointsPer82 - a.pointsPer82)
-  } else if (preset === '100-pt-pace') {
-    rows = rows
-      .filter(r => r.gamesPlayed >= 20 && r.pointsPer82 >= 100)
-      .sort((a, b) => b.pointsPer82 - a.pointsPer82)
-  } else if (preset === '50-goal-pace') {
-    rows = rows
-      .filter(r => r.gamesPlayed >= 20)
-      .sort((a, b) => b.goalsPer82 - a.goalsPer82)
-      .slice(0, 50)
-  }
 
   return rows
 }

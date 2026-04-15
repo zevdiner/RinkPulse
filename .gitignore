@@ -44,7 +44,9 @@ next-env.d.ts
 # goalies.csv (1.5 MB) and teams.csv (1.6 MB) are committed and work fine.
 # For skaters + lines historical context, connect Supabase (see data/README.md).
 data/skaters.csv
+data/skaters_fixed.csv
 data/lines.csv
+data/lines_fixed.csv
 # *_slim.csv files are intentionally committed — filtered, Vercel-safe versions (~1.4 MB each)
 !data/lines_slim.csv
 !data/skaters_slim.csv

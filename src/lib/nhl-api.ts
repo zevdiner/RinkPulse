@@ -174,9 +174,11 @@ export async function getSkaterStats(
   limit = 100,
 ): Promise<NHLSkaterStats[]> {
   const exp = `seasonId=${CURRENT_SEASON} and gameTypeId=2`
+  // NHL stats/rest API requires sort as a JSON array, URL-encoded
+  const sortParam = encodeURIComponent(JSON.stringify([{ property: sort, direction: 'DESC' }]))
   try {
     const res = await fetch(
-      `${STATS_BASE}/skater/summary?limit=${limit}&sort=${sort}&cayenneExp=${encodeURIComponent(exp)}`,
+      `${STATS_BASE}/skater/summary?limit=${limit}&sort=${sortParam}&cayenneExp=${encodeURIComponent(exp)}`,
       { headers: { Accept: 'application/json' } },
     )
     if (!res.ok) return []

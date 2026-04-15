@@ -3,20 +3,42 @@ import Image from 'next/image'
 import Link from 'next/link'
 import type { Metadata } from 'next'
 import { cacheLife, cacheTag } from 'next/cache'
-import { getSkaterLeaders } from '@/lib/nhl-api'
+import { getSkaterStats, playerHeadshotUrl } from '@/lib/nhl-api'
 import PlayerSearchNav from '@/components/PlayerSearchNav'
-import type { NHLStatLeader } from '@/types'
 
 export const metadata: Metadata = {
   title: 'Players — RinkPulse',
   description: 'Browse current NHL scoring leaders or search any player to see their career arc, advanced percentiles, and historical comparisons.',
 }
 
-async function fetchLeaders() {
+interface TopSkater {
+  playerId: number
+  name: string
+  team: string
+  position: string
+  headshot: string
+  gamesPlayed: number
+  goals: number
+  assists: number
+  points: number
+}
+
+async function fetchTopScorers(): Promise<TopSkater[]> {
   'use cache'
   cacheLife('hours')
-  cacheTag('skater-leaders')
-  return getSkaterLeaders('points', 30)
+  cacheTag('top-scorers')
+  const skaters = await getSkaterStats('points', 30)
+  return skaters.map(s => ({
+    playerId:    s.playerId,
+    name:        s.skaterFullName,
+    team:        s.teamAbbrevs?.split(',')[0].trim() ?? '',
+    position:    s.positionCode,
+    headshot:    playerHeadshotUrl(s.playerId),
+    gamesPlayed: s.gamesPlayed,
+    goals:       s.goals,
+    assists:     s.assists,
+    points:      s.points,
+  }))
 }
 
 export default function PlayersPage() {
@@ -43,7 +65,7 @@ export default function PlayersPage() {
 }
 
 async function TopScorers() {
-  const leaders = await fetchLeaders()
+  const leaders = await fetchTopScorers()
 
   if (leaders.length === 0) {
     return (
@@ -59,34 +81,41 @@ async function TopScorers() {
         2025–26 Points Leaders
       </h2>
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-        {leaders.map((p: NHLStatLeader, i: number) => (
+        {leaders.map((p, i) => (
           <Link
             key={p.playerId}
             href={`/players/${p.playerId}`}
             className="card p-4 flex items-center gap-3 hover:border-[var(--accent-blue)]/50 transition-all group"
           >
+            {/* Rank */}
             <span className="text-xs text-[var(--text-muted)] tabular-nums w-5 shrink-0 text-right">
               {i + 1}
             </span>
+
+            {/* Headshot */}
             <div className="relative w-10 h-10 rounded-full overflow-hidden bg-[var(--border)] shrink-0">
               <Image
                 src={p.headshot}
-                alt={p.name?.default ?? ''}
+                alt={p.name}
                 fill
                 className="object-cover object-top"
                 unoptimized
               />
             </div>
+
+            {/* Name + team */}
             <div className="flex-1 min-w-0">
-              <div className="font-semibold text-sm text-[var(--text-primary)] group-hover:text-[var(--accent-blue)] transition-colors truncate">
-                {p.name?.default}
+              <div className="font-semibold text-sm text-[var(--text-primary)] group-hover:text-[var(--accent-blue)] transition-colors leading-snug">
+                {p.name}
               </div>
-              <div className="text-xs text-[var(--text-muted)]">
-                {p.position} · {p.teamAbbrev?.default}
+              <div className="text-xs text-[var(--text-muted)] mt-0.5">
+                {p.position} · {p.team}
               </div>
             </div>
+
+            {/* Stat */}
             <div className="text-right shrink-0">
-              <div className="text-xl font-bold tabular-nums text-[var(--text-primary)]">{p.value}</div>
+              <div className="text-xl font-bold tabular-nums text-[var(--text-primary)]">{p.points}</div>
               <div className="text-[10px] text-[var(--text-muted)] uppercase tracking-wider">PTS</div>
             </div>
           </Link>
