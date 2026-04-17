@@ -18,7 +18,7 @@ export default async function ScoringStreaks() {
   cacheLife('hours')
   cacheTag('scoring-streaks')
 
-  const topSkaters = await getSkaterStats('points', 50)
+  const topSkaters = await getSkaterStats('points', 100)
   if (topSkaters.length === 0) return null
 
   // Batch-fetch all game logs in parallel
@@ -48,7 +48,7 @@ export default async function ScoringStreaks() {
       }
     }
 
-    if (streak >= 3) {
+    if (streak >= 2) {
       const s = topSkaters[i]
       const teamAbbrev = s.teamAbbrevs?.split(',')[0].trim() ?? ''
       streaks.push({
@@ -72,7 +72,7 @@ export default async function ScoringStreaks() {
       <div className="mb-4">
         <h2 className="text-lg font-bold text-[var(--text-primary)]">Hot Streaks 🔥</h2>
         <p className="text-xs text-[var(--text-secondary)] mt-0.5">
-          Active point streaks of 3+ consecutive games this season
+          Active point streaks of 2+ consecutive games this season
         </p>
       </div>
 

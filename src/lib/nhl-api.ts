@@ -172,9 +172,10 @@ export interface NHLSkaterStats {
 export async function getSkaterStats(
   sort: 'points' | 'goals' | 'assists' = 'points',
   limit = 100,
+  teamAbbrev?: string,
 ): Promise<NHLSkaterStats[]> {
-  const exp = `seasonId=${CURRENT_SEASON} and gameTypeId=2`
-  // NHL stats/rest API requires sort as a JSON array, URL-encoded
+  let exp = `seasonId=${CURRENT_SEASON} and gameTypeId=2`
+  if (teamAbbrev) exp += ` and teamAbbrevs likeIgnoreCase "%${teamAbbrev}%"`
   const sortParam = encodeURIComponent(JSON.stringify([{ property: sort, direction: 'DESC' }]))
   try {
     const res = await fetch(
@@ -183,6 +184,42 @@ export async function getSkaterStats(
     )
     if (!res.ok) return []
     const data = await res.json() as { data: NHLSkaterStats[] }
+    return data.data ?? []
+  } catch {
+    return []
+  }
+}
+
+// ─── Goalie Stats (stats/rest summary endpoint) ───────────────────────────────
+
+export interface NHLGoalieStats {
+  playerId: number
+  goalieFullName: string
+  teamAbbrevs: string
+  gamesPlayed: number
+  gamesStarted: number
+  wins: number
+  losses: number
+  otLosses: number
+  savePctg: number
+  goalsAgainstAverage: number
+  shutouts: number
+}
+
+export async function getGoalieStats(
+  limit = 50,
+  teamAbbrev?: string,
+): Promise<NHLGoalieStats[]> {
+  let exp = `seasonId=${CURRENT_SEASON} and gameTypeId=2`
+  if (teamAbbrev) exp += ` and teamAbbrevs likeIgnoreCase "%${teamAbbrev}%"`
+  const sortParam = encodeURIComponent(JSON.stringify([{ property: 'wins', direction: 'DESC' }]))
+  try {
+    const res = await fetch(
+      `${STATS_BASE}/goalie/summary?limit=${limit}&sort=${sortParam}&cayenneExp=${encodeURIComponent(exp)}`,
+      { headers: { Accept: 'application/json' } },
+    )
+    if (!res.ok) return []
+    const data = await res.json() as { data: NHLGoalieStats[] }
     return data.data ?? []
   } catch {
     return []

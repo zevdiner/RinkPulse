@@ -516,14 +516,21 @@ export async function generateDailyStories(): Promise<Story[]> {
     ...(hotCold.status === 'fulfilled' ? hotCold.value : []),
   ]
 
-  // Deduplicate by player, cap at 8, prioritize highest percentile
-  const seen = new Set<number>()
+  // Deduplicate by player AND team — no more than 1 story per player or team.
+  // Prioritize highest percentile stories first.
+  const seenPlayers = new Set<number>()
+  const seenTeams = new Set<string>()
+
   const deduped = all
     .sort((a, b) => (b.percentile ?? 0) - (a.percentile ?? 0))
     .filter(story => {
       if (story.playerId) {
-        if (seen.has(story.playerId)) return false
-        seen.add(story.playerId)
+        if (seenPlayers.has(story.playerId)) return false
+        seenPlayers.add(story.playerId)
+      }
+      if (story.teamAbbrev) {
+        if (seenTeams.has(story.teamAbbrev)) return false
+        seenTeams.add(story.teamAbbrev)
       }
       return true
     })
