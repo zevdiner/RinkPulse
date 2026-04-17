@@ -15,6 +15,7 @@ export interface CareerArcPoint {
   season: string   // e.g. "2019-20"
   points: number | null
   goals: number | null
+  wins?: number | null
 }
 
 interface Props {

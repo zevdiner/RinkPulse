@@ -7,9 +7,10 @@ import type { Metadata } from 'next'
 import {
   getStandings,
   getClubStats,
+  getTeamRecentGames,
   teamLogoUrl,
 } from '@/lib/nhl-api'
-import type { NHLClubSkaterStat, NHLClubGoalieStat } from '@/lib/nhl-api'
+import type { NHLClubSkaterStat, NHLClubGoalieStat, NHLScheduleGame } from '@/lib/nhl-api'
 import type { NHLStandingsTeam } from '@/types'
 
 // ─── Metadata ─────────────────────────────────────────────────────────────────
@@ -23,6 +24,20 @@ export async function generateMetadata(
     title: `${upper} — RinkPulse`,
     description: `2025–26 roster stats, standings, and player profiles for the ${upper}.`,
   }
+}
+
+// ─── Cached data layer ────────────────────────────────────────────────────────
+
+async function fetchTeamData(abbrev: string) {
+  'use cache'
+  cacheLife('hours')
+  cacheTag(`team-${abbrev}`)
+  const [standings, clubStats, recentGames] = await Promise.all([
+    getStandings(),
+    getClubStats(abbrev),
+    getTeamRecentGames(abbrev),
+  ])
+  return { standings, clubStats, recentGames }
 }
 
 // ─── Page shell ───────────────────────────────────────────────────────────────
@@ -52,18 +67,10 @@ function TeamSkeleton() {
 // ─── Content ──────────────────────────────────────────────────────────────────
 
 async function TeamContent({ params }: { params: Promise<{ abbrev: string }> }) {
-  'use cache'
-  cacheLife('hours')
-
   const { abbrev } = await params
   const upper = abbrev.toUpperCase()
 
-  cacheTag(`team-${upper}`)
-
-  const [standings, clubStats] = await Promise.all([
-    getStandings(),
-    getClubStats(upper),
-  ])
+  const { standings, clubStats, recentGames } = await fetchTeamData(upper)
 
   const teamStanding: NHLStandingsTeam | undefined = standings.find(
     t => t.teamAbbrev.default === upper
@@ -159,6 +166,55 @@ async function TeamContent({ params }: { params: Promise<{ abbrev: string }> }) 
           </div>
         </div>
       </div>
+
+      {/* Recent games */}
+      {recentGames.length > 0 && (
+        <div className="card overflow-hidden mb-6">
+          <div className="px-5 py-3 border-b border-[var(--border)]">
+            <h2 className="text-sm font-semibold text-[var(--text-primary)]">Recent Games</h2>
+          </div>
+          <div className="divide-y divide-[var(--border)]/50">
+            {recentGames.map((game: NHLScheduleGame) => {
+              const isHome = game.homeTeam.abbrev === upper
+              const opponent = isHome ? game.awayTeam : game.homeTeam
+              const myScore = isHome ? (game.homeTeam.score ?? 0) : (game.awayTeam.score ?? 0)
+              const oppScore = isHome ? (game.awayTeam.score ?? 0) : (game.homeTeam.score ?? 0)
+              const won = myScore > oppScore
+              const period = game.gameOutcome?.lastPeriodType
+              const suffix = period === 'OT' ? ' OT' : period === 'SO' ? ' SO' : ''
+              const result = won ? 'W' : 'L'
+
+              return (
+                <div key={game.id} className="flex items-center gap-4 px-5 py-3">
+                  <div className={`text-sm font-bold w-4 ${won ? 'text-green-400' : 'text-red-400'}`}>
+                    {result}
+                  </div>
+                  <div className="flex items-center gap-2 flex-1 min-w-0">
+                    <div className="relative w-6 h-6 shrink-0">
+                      <Image
+                        src={teamLogoUrl(opponent.abbrev)}
+                        alt={opponent.abbrev}
+                        fill
+                        className="object-contain"
+                        unoptimized
+                      />
+                    </div>
+                    <span className="text-sm text-[var(--text-secondary)] truncate">
+                      {isHome ? 'vs' : '@'} {opponent.abbrev}
+                    </span>
+                  </div>
+                  <div className="text-sm font-bold tabular-nums text-[var(--text-primary)]">
+                    {myScore}–{oppScore}{suffix}
+                  </div>
+                  <div className="text-xs text-[var(--text-muted)] tabular-nums w-20 text-right hidden sm:block">
+                    {new Date(game.gameDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        </div>
+      )}
 
       {/* Skaters */}
       {skaters.length > 0 && (

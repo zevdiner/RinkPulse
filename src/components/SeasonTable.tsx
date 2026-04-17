@@ -67,7 +67,7 @@ export default function SeasonTable({ seasons, isGoalie, currentSeason }: Props)
                     <td className="py-2 px-2 text-right tabular-nums">{s.losses ?? '—'}</td>
                     <td className="py-2 px-2 text-right tabular-nums">{s.otLosses ?? '—'}</td>
                     <td className="py-2 px-2 text-right tabular-nums">
-                      {s.savePercentage != null ? s.savePercentage.toFixed(3) : '—'}
+                      {(s.savePercentage ?? s.savePctg) != null ? (s.savePercentage ?? s.savePctg)!.toFixed(3) : '—'}
                     </td>
                     <td className="py-2 px-2 text-right tabular-nums">
                       {s.goalsAgainstAvg != null ? s.goalsAgainstAvg.toFixed(2) : '—'}

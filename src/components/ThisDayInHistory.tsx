@@ -1,20 +1,32 @@
+import Image from 'next/image'
 import { cacheLife, cacheTag } from 'next/cache'
-import { getGamesOnDate } from '@/lib/nhl-api'
+import { getGamesOnDate, teamLogoUrl } from '@/lib/nhl-api'
 import type { NHLHistoricalGame } from '@/lib/nhl-api'
-
-// ─── Scoring ──────────────────────────────────────────────────────────────────
 
 function scoreGame(game: NHLHistoricalGame): number {
   let score = 0
-  if (game.gameType === 3) score += 100 // playoff
+  if (game.gameType === 3) score += 200           // playoffs heavily weighted
   const combined = (game.homeTeam.score ?? 0) + (game.awayTeam.score ?? 0)
-  score += combined * 3
+  score += combined * 4
+  const diff = Math.abs((game.homeTeam.score ?? 0) - (game.awayTeam.score ?? 0))
+  if (diff <= 1) score += 30                       // tight game bonus
   const period = game.gameOutcome?.lastPeriodType
-  if (period === 'OT' || period === 'SO') score += 20
+  if (period === 'OT') score += 50
+  if (period === 'SO') score += 25
   return score
 }
 
-// ─── Component ────────────────────────────────────────────────────────────────
+function isNotable(game: NHLHistoricalGame): boolean {
+  // Only surface genuinely interesting games
+  const combined = (game.homeTeam.score ?? 0) + (game.awayTeam.score ?? 0)
+  const period = game.gameOutcome?.lastPeriodType
+  return (
+    game.gameType === 3 ||             // any playoff game
+    combined >= 9 ||                   // high-scoring
+    period === 'OT' ||                 // overtime
+    period === 'SO'                    // shootout
+  )
+}
 
 export default async function ThisDayInHistory() {
   'use cache'
@@ -22,78 +34,123 @@ export default async function ThisDayInHistory() {
   cacheTag('this-day-history')
 
   const today = new Date()
+  const currentYear = today.getFullYear()
   const month = String(today.getMonth() + 1).padStart(2, '0')
   const day = String(today.getDate()).padStart(2, '0')
 
-  // Fetch games for today's month/day across 2015–2024 in parallel
-  const years = [2015, 2016, 2017, 2018, 2019, 2020, 2021, 2022, 2023, 2024]
+  // Fetch today's month/day from 2010 through last year
+  const years = Array.from({ length: currentYear - 2010 }, (_, i) => 2010 + i)
   const settled = await Promise.allSettled(
-    years.map(year => getGamesOnDate(`${year}-${month}-${day}`))
+    years.map(yr => getGamesOnDate(`${yr}-${month}-${day}`))
   )
 
-  // Flatten all games with their year embedded in gameDate
-  const allGames: NHLHistoricalGame[] = settled.flatMap(result =>
-    result.status === 'fulfilled' ? result.value : []
+  const allGames: NHLHistoricalGame[] = settled.flatMap(r =>
+    r.status === 'fulfilled' ? r.value : []
   )
 
-  if (allGames.length === 0) return null
+  // Filter to notable games first; fall back to top games if nothing passes
+  const notable = allGames.filter(isNotable)
+  const pool = notable.length >= 3 ? notable : allGames
+  if (pool.length === 0) return null
 
-  // Pick the most notable game
-  const best = allGames.reduce<NHLHistoricalGame | null>((top, game) => {
-    if (!top) return game
-    return scoreGame(game) > scoreGame(top) ? game : top
-  }, null)
+  const top3 = [...pool]
+    .sort((a, b) => scoreGame(b) - scoreGame(a))
+    .slice(0, 3)
 
-  if (!best) return null
-
-  // Parse year from gameDate (YYYY-MM-DD)
-  const year = best.gameDate.slice(0, 4)
-  const awayAbbrev = best.awayTeam.abbrev
-  const homeAbbrev = best.homeTeam.abbrev
-  const awayScore = best.awayTeam.score ?? 0
-  const homeScore = best.homeTeam.score ?? 0
-  const period = best.gameOutcome?.lastPeriodType
-  const suffix = period === 'OT' ? ' OT' : period === 'SO' ? ' SO' : ''
-  const isPlayoff = best.gameType === 3
-  const contextLabel = isPlayoff ? 'Playoff game' : 'Regular season'
-
-  // Build score string: away team listed first, higher score listed prominently
-  const scoreStr = `${awayAbbrev} ${awayScore}, ${homeAbbrev} ${homeScore}${suffix}`
+  function yearsAgo(game: NHLHistoricalGame) {
+    const y = parseInt(game.gameDate.slice(0, 4))
+    const diff = currentYear - y
+    return diff === 1 ? '1 yr ago' : `${diff} yrs ago`
+  }
 
   return (
-    <div className="mb-6">
-      <div className="card p-5 flex flex-col sm:flex-row sm:items-center gap-4">
-        {/* Amber accent bar */}
-        <div className="w-1 self-stretch rounded-full bg-amber-500/60 shrink-0 hidden sm:block" />
+    <div className="mb-8">
+      <div className="flex items-center gap-2 mb-3">
+        <span className="text-[10px] font-bold uppercase tracking-widest text-amber-400">
+          On This Day in NHL History
+        </span>
+        <span className="text-[10px] text-[var(--text-muted)]">
+          · {today.toLocaleDateString('en-US', { month: 'long', day: 'numeric' })}
+        </span>
+      </div>
 
-        <div className="flex-1 min-w-0">
-          {/* Badge */}
-          <div className="flex items-center gap-2 mb-1.5">
-            <span className="text-[10px] font-bold uppercase tracking-widest text-amber-400">
-              On This Day
-            </span>
-          </div>
+      <div className="card divide-y divide-[var(--border)]">
+        {top3.map((game, i) => {
+          const year = game.gameDate.slice(0, 4)
+          const period = game.gameOutcome?.lastPeriodType
+          const isPlayoff = game.gameType === 3
+          const isOT = period === 'OT'
+          const isSO = period === 'SO'
+          const away = game.awayTeam
+          const home = game.homeTeam
+          const awayWon = (away.score ?? 0) > (home.score ?? 0)
 
-          {/* Year + matchup */}
-          <div className="flex items-baseline gap-3 flex-wrap">
-            <span className="text-2xl font-bold tabular-nums text-[var(--text-primary)]">
-              {year}
-            </span>
-            <span className="text-base font-semibold text-[var(--text-primary)] truncate">
-              {scoreStr}
-            </span>
-          </div>
+          return (
+            <div key={`${game.gameDate}-${i}`} className="flex items-center gap-3 px-4 py-3.5">
+              {/* Year */}
+              <div className="shrink-0 w-14 text-right">
+                <div className="text-sm font-bold tabular-nums text-[var(--text-primary)]">{year}</div>
+                <div className="text-[10px] text-[var(--text-muted)]">{yearsAgo(game)}</div>
+              </div>
 
-          {/* Context */}
-          <div className="mt-1 text-xs text-[var(--text-muted)]">
-            {contextLabel}
-            {isPlayoff && (
-              <span className="ml-1.5 inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold bg-amber-500/15 text-amber-400">
-                Playoffs
-              </span>
-            )}
-          </div>
-        </div>
+              <div className="w-px h-8 bg-[var(--border)] shrink-0" />
+
+              {/* Matchup with logos */}
+              <div className="flex items-center gap-2 flex-1 min-w-0 flex-wrap">
+                {/* Away team */}
+                <div className={`flex items-center gap-1.5 ${awayWon ? '' : 'opacity-50'}`}>
+                  <div className="relative w-6 h-6 shrink-0">
+                    <Image
+                      src={teamLogoUrl(away.abbrev)}
+                      alt={away.abbrev}
+                      fill
+                      className="object-contain"
+                      unoptimized
+                    />
+                  </div>
+                  <span className="text-xs font-semibold text-[var(--text-secondary)]">{away.abbrev}</span>
+                  <span className="text-sm font-bold tabular-nums text-[var(--text-primary)]">{away.score}</span>
+                </div>
+
+                <span className="text-[var(--text-muted)] text-xs">–</span>
+
+                {/* Home team */}
+                <div className={`flex items-center gap-1.5 ${!awayWon ? '' : 'opacity-50'}`}>
+                  <span className="text-sm font-bold tabular-nums text-[var(--text-primary)]">{home.score}</span>
+                  <span className="text-xs font-semibold text-[var(--text-secondary)]">{home.abbrev}</span>
+                  <div className="relative w-6 h-6 shrink-0">
+                    <Image
+                      src={teamLogoUrl(home.abbrev)}
+                      alt={home.abbrev}
+                      fill
+                      className="object-contain"
+                      unoptimized
+                    />
+                  </div>
+                </div>
+
+                {/* Badges */}
+                <div className="flex items-center gap-1 ml-1">
+                  {isPlayoff && (
+                    <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-amber-500/15 text-amber-400 uppercase tracking-wide">
+                      Playoffs
+                    </span>
+                  )}
+                  {isOT && (
+                    <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-blue-500/15 text-blue-400 uppercase tracking-wide">
+                      OT
+                    </span>
+                  )}
+                  {isSO && (
+                    <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-purple-500/15 text-purple-400 uppercase tracking-wide">
+                      SO
+                    </span>
+                  )}
+                </div>
+              </div>
+            </div>
+          )
+        })}
       </div>
     </div>
   )

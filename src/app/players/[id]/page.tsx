@@ -113,6 +113,7 @@ async function PlayerContent({ params }: { params: Promise<{ id: string }> }) {
       season: formatSeason(s.season),
       points: s.points ?? null,
       goals: s.goals ?? null,
+      wins: s.wins ?? null,
     }))
 
   // ── MoneyPuck percentiles ─────────────────────────────────────────────────
@@ -193,14 +194,15 @@ async function PlayerContent({ params }: { params: Promise<{ id: string }> }) {
       if (refSeason) {
         refSeasonLabel = formatSeason(refSeason.season)
 
-        // SV% — higher is better
-        if (refSeason.savePercentage != null) {
+        // SV% — higher is better; NHL API may return savePctg or savePercentage
+        const svp = refSeason.savePercentage ?? refSeason.savePctg ?? null
+        if (svp != null) {
           const allSvp = allGoalieSeasons.map(g => (g.ongoal - g.goals) / g.ongoal)
           percentileEntries.push({
             label: 'SV%',
             description: 'Save percentage',
-            value: refSeason.savePercentage.toFixed(3),
-            percentile: computePercentile(refSeason.savePercentage, allSvp),
+            value: svp.toFixed(3),
+            percentile: computePercentile(svp, allSvp),
           })
         }
 

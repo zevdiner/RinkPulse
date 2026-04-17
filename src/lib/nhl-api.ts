@@ -257,6 +257,34 @@ export async function getClubStats(abbrev: string): Promise<NHLClubStatsResponse
   }
 }
 
+// ─── Team Recent Games ────────────────────────────────────────────────────────
+
+export interface NHLScheduleGame {
+  id: number
+  gameDate: string
+  gameState: string // FINAL, LIVE, PRE, FUT
+  gameType: number
+  awayTeam: { abbrev: string; score?: number; logo?: string }
+  homeTeam: { abbrev: string; score?: number; logo?: string }
+  gameOutcome?: { lastPeriodType: string }
+}
+
+export async function getTeamRecentGames(abbrev: string): Promise<NHLScheduleGame[]> {
+  try {
+    // Fetches the week schedule; we'll call month to get more history
+    const data = await nhlfetch<{ games?: NHLScheduleGame[]; previousSeason?: NHLScheduleGame[] }>(
+      `/club-schedule/${abbrev}/month/now`
+    )
+    const games: NHLScheduleGame[] = data.games ?? []
+    return games
+      .filter(g => g.gameState === 'FINAL' || g.gameState === 'OFF')
+      .sort((a, b) => b.gameDate.localeCompare(a.gameDate))
+      .slice(0, 10)
+  } catch {
+    return []
+  }
+}
+
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 export function playerDisplayName(landing: NHLPlayerLanding): string {

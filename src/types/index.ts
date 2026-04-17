@@ -89,7 +89,8 @@ export interface NHLSeasonTotal {
   wins?: number
   losses?: number
   otLosses?: number
-  savePercentage?: number
+  savePercentage?: number  // NHL landing endpoint field name
+  savePctg?: number        // alternate field name used in some NHL API responses
   goalsAgainstAvg?: number
   shutouts?: number
   saves?: number
